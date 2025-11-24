@@ -1,0 +1,31 @@
+{
+  "name": "sudoopscode-backend",
+  "version": "1.0.0",
+  "description": "Node backend for SudoOpsCode application",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">= 14.0.0",
+    "npm": ">= 6.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+  },
+  "dependencies": {
+    "@types/dockerode": "^3.3.47",
+    "dockerode": "^4.0.9",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jest": "^30.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^10.1.0",
+    "prettier": "^3.6.2"
+  },
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.28.5",
+    "@types/express": "^5.0.5"
+  }
+}
