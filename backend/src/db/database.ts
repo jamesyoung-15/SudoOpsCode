@@ -16,7 +16,7 @@ export const db = new Database(dbPath);
 // Enable WAL mode for better concurrency
 db.pragma("journal_mode = WAL");
 
-export function initializeDatabase() {
+export const initializeDatabase = () => {
   logger.info("Initializing database...");
 
   // Creates tables if they do not exist
@@ -52,9 +52,9 @@ export function initializeDatabase() {
   `);
 
   logger.info("Database initialized successfully");
-}
+};
 
-export function closeDatabase() {
+export const closeDatabase = () => {
   db.close();
   logger.info("Database connection closed");
-}
+};

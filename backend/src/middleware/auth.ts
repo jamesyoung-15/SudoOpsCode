@@ -14,11 +14,11 @@ export interface AuthRequest extends Request {
   user?: JWTPayload;
 }
 
-export function authenticateToken(
+export const authenticateToken = (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
-): void {
+): void => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
@@ -37,4 +37,14 @@ export function authenticateToken(
     logger.warn({ error: err }, "Authentication failed: Invalid token");
     res.status(403).json({ error: "Invalid or expired token" });
   }
-}
+};
+
+export const verifyToken = (token: string): JWTPayload | null => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return decoded;
+  } catch (err) {
+    logger.warn({ error: err }, "Token verification failed");
+    return null;
+  }
+};
