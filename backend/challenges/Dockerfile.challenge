@@ -1,0 +1,49 @@
+FROM alpine:latest
+
+# Install common tools
+RUN apk add --update --no-cache \
+    bash \
+    vim \
+    nano \
+    curl \
+    grep \
+    sed \
+    busybox \
+    coreutils \
+    util-linux \
+    procps \
+    net-tools \
+    bind-tools \
+    sudo
+
+# Create non-root user
+RUN adduser -D -s /bin/bash challenger && \
+    echo "challenger ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/challenger
+
+# Create validation scripts directory
+RUN mkdir -p /validate && chown challenger:challenger /validate
+
+# Add a test validation script
+COPY <<'EOF' /validate/challenge-1.sh
+#!/bin/bash
+# Challenge 1: Create a file named 'complete.txt' in /tmp
+
+if [ -f /tmp/complete.txt ]; then
+    echo "File /tmp/complete.txt exists"
+    exit 0
+else
+    echo "File /tmp/complete.txt not found"
+    exit 1
+fi
+EOF
+
+RUN chmod +x /validate/challenge-1.sh
+
+# Set working directory
+WORKDIR /home/challenger
+
+# Switch to non-root user
+USER challenger
+
+# Keep container running
+CMD ["sleep", "infinity"]
