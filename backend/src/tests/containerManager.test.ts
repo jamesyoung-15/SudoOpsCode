@@ -110,14 +110,18 @@ describe("ContainerManager", () => {
         cb(new Error("Build failed"), null);
       });
 
-      await expect(containerManager.ensureImage()).rejects.toThrow("Build failed");
+      await expect(containerManager.ensureImage()).rejects.toThrow(
+        "Build failed",
+      );
     });
   });
 
   describe("createContainer", () => {
     beforeEach(() => {
       mockInspect.mockResolvedValue({});
-      mockGetChallengeDirectory.mockResolvedValue("/fake/challenges/test-challenge");
+      mockGetChallengeDirectory.mockResolvedValue(
+        "/fake/challenges/test-challenge",
+      );
       mockExistsSync.mockReturnValue(true);
       mockCreateContainer.mockResolvedValue({
         id: "container123",
@@ -150,7 +154,7 @@ describe("ContainerManager", () => {
             "challenges.user_id": "100",
             "challenges.challenge_id": "1",
           }),
-        })
+        }),
       );
     });
 
@@ -170,7 +174,7 @@ describe("ContainerManager", () => {
       expect(mockExec).toHaveBeenCalledWith(
         expect.objectContaining({
           Cmd: ["/bin/bash", "/challenge/setup.sh"],
-        })
+        }),
       );
       expect(mockExecStart).toHaveBeenCalled();
     });
@@ -188,9 +192,9 @@ describe("ContainerManager", () => {
     it("should throw error if challenge directory doesn't exist", async () => {
       mockExistsSync.mockReturnValue(false);
 
-      await expect(
-        containerManager.createContainer(1, 100)
-      ).rejects.toThrow("Challenge directory not found");
+      await expect(containerManager.createContainer(1, 100)).rejects.toThrow(
+        "Challenge directory not found",
+      );
     });
 
     it("should ensure image exists before creating container", async () => {
@@ -225,14 +229,16 @@ describe("ContainerManager", () => {
       mockRemove.mockRejectedValue(new Error("Removal failed"));
 
       await expect(
-        containerManager.removeContainer("container123")
+        containerManager.removeContainer("container123"),
       ).rejects.toThrow("Removal failed");
     });
   });
 
   describe("validateChallenge", () => {
     beforeEach(() => {
-      mockGetChallengeDirectory.mockResolvedValue("/fake/challenges/test-challenge");
+      mockGetChallengeDirectory.mockResolvedValue(
+        "/fake/challenges/test-challenge",
+      );
       mockExistsSync.mockReturnValue(true);
       mockExec.mockResolvedValue({
         start: mockExecStart,
@@ -253,13 +259,16 @@ describe("ContainerManager", () => {
       mockExecStart.mockResolvedValue(mockStream);
       mockExecInspect.mockResolvedValue({ ExitCode: 0 });
 
-      const result = await containerManager.validateChallenge("container123", 1);
+      const result = await containerManager.validateChallenge(
+        "container123",
+        1,
+      );
 
       expect(result).toBe(true);
       expect(mockExec).toHaveBeenCalledWith(
         expect.objectContaining({
           Cmd: ["/bin/bash", "/challenge/validate.sh"],
-        })
+        }),
       );
     });
 
@@ -276,7 +285,10 @@ describe("ContainerManager", () => {
       mockExecStart.mockResolvedValue(mockStream);
       mockExecInspect.mockResolvedValue({ ExitCode: 1 });
 
-      const result = await containerManager.validateChallenge("container123", 1);
+      const result = await containerManager.validateChallenge(
+        "container123",
+        1,
+      );
 
       expect(result).toBe(false);
     });
@@ -285,14 +297,17 @@ describe("ContainerManager", () => {
       mockExistsSync.mockReturnValue(false);
 
       await expect(
-        containerManager.validateChallenge("container123", 1)
+        containerManager.validateChallenge("container123", 1),
       ).rejects.toThrow("Validation script not found");
     });
 
     it("should return false if validation execution fails", async () => {
       mockExecStart.mockRejectedValue(new Error("Execution failed"));
 
-      const result = await containerManager.validateChallenge("container123", 1);
+      const result = await containerManager.validateChallenge(
+        "container123",
+        1,
+      );
 
       expect(result).toBe(false);
     });
@@ -339,7 +354,7 @@ describe("ContainerManager", () => {
       mockListContainers.mockResolvedValue([]);
 
       await expect(
-        containerManager.cleanupAllContainers()
+        containerManager.cleanupAllContainers(),
       ).resolves.not.toThrow();
 
       expect(mockStop).not.toHaveBeenCalled();
@@ -356,9 +371,9 @@ describe("ContainerManager", () => {
         .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error("Failed to remove"));
 
-      await expect(
-        containerManager.cleanupAllContainers()
-      ).rejects.toThrow("Failed to remove");
+      await expect(containerManager.cleanupAllContainers()).rejects.toThrow(
+        "Failed to remove",
+      );
 
       expect(mockRemove).toHaveBeenCalledTimes(2);
     });

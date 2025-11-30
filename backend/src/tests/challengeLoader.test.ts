@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll, jest } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterAll,
+  jest,
+} from "@jest/globals";
 import { QueryTypes } from "sequelize";
 import {
   testSequelize,
@@ -54,7 +62,10 @@ describe("ChallengeLoader", () => {
   beforeEach(async () => {
     await cleanTestDatabase();
     jest.clearAllMocks();
-    challengeLoader = new ChallengeLoader(testSequelize, "/fake/test/challenges");
+    challengeLoader = new ChallengeLoader(
+      testSequelize,
+      "/fake/test/challenges",
+    );
   });
 
   afterAll(async () => {
@@ -68,10 +79,9 @@ describe("ChallengeLoader", () => {
 
       await challengeLoader.loadChallenges();
 
-      expect(mockMkdirSync).toHaveBeenCalledWith(
-        "/fake/test/challenges",
-        { recursive: true }
-      );
+      expect(mockMkdirSync).toHaveBeenCalledWith("/fake/test/challenges", {
+        recursive: true,
+      });
     });
 
     it("should load all valid challenge directories", async () => {
@@ -124,10 +134,10 @@ describe("ChallengeLoader", () => {
       await challengeLoader.loadChallenges();
 
       // Verify challenges were inserted
-      const challenges = await testSequelize.query(
+      const challenges = (await testSequelize.query(
         "SELECT * FROM challenges ORDER BY directory",
-        { type: QueryTypes.SELECT }
-      ) as any[];
+        { type: QueryTypes.SELECT },
+      )) as any[];
 
       expect(challenges).toHaveLength(2);
       expect(challenges[0].title).toBe("Challenge 1");
@@ -141,9 +151,16 @@ describe("ChallengeLoader", () => {
       await testSequelize.query(
         "INSERT INTO challenges (title, description, difficulty, points, category, directory) VALUES (?, ?, ?, ?, ?, ?)",
         {
-          replacements: ["Old Title", "Old Desc", "easy", 50, "linux", "challenge1"],
+          replacements: [
+            "Old Title",
+            "Old Desc",
+            "easy",
+            50,
+            "linux",
+            "challenge1",
+          ],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       mockExistsSync
@@ -151,11 +168,11 @@ describe("ChallengeLoader", () => {
         .mockReturnValueOnce(true) // challenge.yaml exists
         .mockReturnValueOnce(true) // validate.sh exists
         .mockReturnValueOnce(false); // setup.sh doesn't exist
-      
+
       mockReaddirSync.mockReturnValue([
         { name: "challenge1", isDirectory: () => true },
       ]);
-      
+
       mockStatSync.mockReturnValue({ mode: 0o755 });
       mockReadFileSync.mockReturnValue("yaml content");
       mockParse.mockReturnValue({
@@ -170,13 +187,13 @@ describe("ChallengeLoader", () => {
       await challengeLoader.loadChallenges();
 
       // Verify challenge was updated
-      const challenges = await testSequelize.query(
+      const challenges = (await testSequelize.query(
         "SELECT * FROM challenges WHERE directory = ?",
         {
           replacements: ["challenge1"],
           type: QueryTypes.SELECT,
-        }
-      ) as any[];
+        },
+      )) as any[];
 
       expect(challenges).toHaveLength(1);
       expect(challenges[0].title).toBe("Updated Title");
@@ -188,20 +205,20 @@ describe("ChallengeLoader", () => {
       mockExistsSync
         .mockReturnValueOnce(true) // challenges dir exists
         .mockReturnValueOnce(false); // challenge.yaml missing
-      
+
       mockReaddirSync.mockReturnValue([
         { name: "invalid-challenge", isDirectory: () => true },
       ]);
 
       // Should not throw, but log error
       await expect(challengeLoader.loadChallenges()).resolves.not.toThrow();
-      
+
       // Verify no challenges were loaded
-      const challenges = await testSequelize.query(
+      const challenges = (await testSequelize.query(
         "SELECT * FROM challenges",
-        { type: QueryTypes.SELECT }
-      ) as any[];
-      
+        { type: QueryTypes.SELECT },
+      )) as any[];
+
       expect(challenges).toHaveLength(0);
     });
 
@@ -211,14 +228,14 @@ describe("ChallengeLoader", () => {
         .mockReturnValueOnce(true) // challenge.yaml exists
         .mockReturnValueOnce(true) // validate.sh exists
         .mockReturnValueOnce(false); // setup.sh doesn't exist
-      
+
       mockReaddirSync.mockReturnValue([
         { name: "challenge1", isDirectory: () => true },
       ]);
 
       // validate.sh not executable
       mockStatSync.mockReturnValueOnce({ mode: 0o644 });
-      
+
       mockReadFileSync.mockReturnValue("yaml content");
       mockParse.mockReturnValue({
         title: "Test",
@@ -233,7 +250,7 @@ describe("ChallengeLoader", () => {
       // Should have called chmod to make it executable
       expect(mockChmodSync).toHaveBeenCalledWith(
         expect.stringContaining("validate.sh"),
-        "755"
+        "755",
       );
     });
   });
@@ -347,7 +364,7 @@ describe("ChallengeLoader", () => {
 
       const result = (challengeLoader as any).parseChallengeMetadata(
         "/fake/path",
-        "test"
+        "test",
       );
 
       expect(result).toEqual({ title: "Test", points: 100 });
@@ -371,9 +388,16 @@ describe("ChallengeLoader", () => {
       await testSequelize.query(
         "INSERT INTO challenges (title, description, difficulty, points, category, directory) VALUES (?, ?, ?, ?, ?, ?)",
         {
-          replacements: ["Test", "Desc", "easy", 100, "linux", "test-challenge"],
+          replacements: [
+            "Test",
+            "Desc",
+            "easy",
+            100,
+            "linux",
+            "test-challenge",
+          ],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       const result = await challengeLoader.getChallengeDirectory(1);
@@ -382,9 +406,9 @@ describe("ChallengeLoader", () => {
     });
 
     it("should throw error if challenge not found", async () => {
-      await expect(
-        challengeLoader.getChallengeDirectory(999)
-      ).rejects.toThrow("Challenge not found: 999");
+      await expect(challengeLoader.getChallengeDirectory(999)).rejects.toThrow(
+        "Challenge not found: 999",
+      );
     });
   });
 
@@ -394,13 +418,13 @@ describe("ChallengeLoader", () => {
         .mockReturnValueOnce(true) // challenge.yaml exists
         .mockReturnValueOnce(true) // validate.sh exists
         .mockReturnValueOnce(false); // setup.sh doesn't exist
-      
+
       mockStatSync.mockReturnValueOnce({ mode: 0o755 }); // validate.sh is executable
 
       expect(() => {
         (challengeLoader as any).validateChallengeDirectory(
           "/fake/path",
-          "test"
+          "test",
         );
       }).not.toThrow();
     });
@@ -411,7 +435,7 @@ describe("ChallengeLoader", () => {
       expect(() => {
         (challengeLoader as any).validateChallengeDirectory(
           "/fake/path",
-          "test"
+          "test",
         );
       }).toThrow(/Missing required file: challenge.yaml/);
     });
@@ -424,7 +448,7 @@ describe("ChallengeLoader", () => {
       expect(() => {
         (challengeLoader as any).validateChallengeDirectory(
           "/fake/path",
-          "test"
+          "test",
         );
       }).toThrow(/Missing required file: validate.sh/);
     });
@@ -434,14 +458,14 @@ describe("ChallengeLoader", () => {
         .mockReturnValueOnce(true) // challenge.yaml exists
         .mockReturnValueOnce(true) // validate.sh exists
         .mockReturnValueOnce(false); // setup.sh doesn't exist
-      
+
       mockStatSync.mockReturnValueOnce({ mode: 0o644 }); // validate.sh not executable
 
       (challengeLoader as any).validateChallengeDirectory("/fake/path", "test");
 
       expect(mockChmodSync).toHaveBeenCalledWith(
         "/fake/path/validate.sh",
-        "755"
+        "755",
       );
     });
   });

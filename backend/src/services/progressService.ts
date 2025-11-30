@@ -26,10 +26,7 @@ export class ProgressService {
         },
       );
 
-      logger.debug(
-        { userId, challengeId, success },
-        "Attempt recorded",
-      );
+      logger.debug({ userId, challengeId, success }, "Attempt recorded");
     } catch (error) {
       logger.error({ error, userId, challengeId }, "Failed to record attempt");
       throw error;
@@ -121,7 +118,10 @@ export class ProgressService {
       logger.debug({ userId, challengeId, success }, "Validation recorded");
     } catch (error) {
       await transaction.rollback();
-      logger.error({ error, userId, challengeId }, "Failed to record validation");
+      logger.error(
+        { error, userId, challengeId },
+        "Failed to record validation",
+      );
       throw error;
     }
   }
@@ -141,7 +141,10 @@ export class ProgressService {
 
       return result.length > 0;
     } catch (error) {
-      logger.error({ error, userId, challengeId }, "Failed to check solve status");
+      logger.error(
+        { error, userId, challengeId },
+        "Failed to check solve status",
+      );
       throw error;
     }
   }
@@ -151,13 +154,13 @@ export class ProgressService {
    */
   async getChallengePoints(challengeId: number): Promise<number> {
     try {
-      const result = await this.db.query(
+      const result = (await this.db.query(
         "SELECT points FROM challenges WHERE id = ?",
         {
           replacements: [challengeId],
           type: QueryTypes.SELECT,
         },
-      ) as Array<{ points: number }>;
+      )) as Array<{ points: number }>;
 
       return result.length > 0 ? result[0].points : 0;
     } catch (error) {

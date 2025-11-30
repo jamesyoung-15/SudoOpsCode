@@ -80,22 +80,27 @@ export const cleanTestDatabase = async () => {
   try {
     // Disable foreign keys temporarily for SQLite
     await testSequelize.query("PRAGMA foreign_keys = OFF");
-    
+
     // Delete data from tables
     await testSequelize.query("DELETE FROM solves");
     await testSequelize.query("DELETE FROM attempts");
     await testSequelize.query("DELETE FROM challenges");
     await testSequelize.query("DELETE FROM users");
-    
+
     // Reset auto-increment counters
-    await testSequelize.query("DELETE FROM sqlite_sequence WHERE name='solves'");
-    await testSequelize.query("DELETE FROM sqlite_sequence WHERE name='attempts'");
-    await testSequelize.query("DELETE FROM sqlite_sequence WHERE name='challenges'");
+    await testSequelize.query(
+      "DELETE FROM sqlite_sequence WHERE name='solves'",
+    );
+    await testSequelize.query(
+      "DELETE FROM sqlite_sequence WHERE name='attempts'",
+    );
+    await testSequelize.query(
+      "DELETE FROM sqlite_sequence WHERE name='challenges'",
+    );
     await testSequelize.query("DELETE FROM sqlite_sequence WHERE name='users'");
-    
+
     // Re-enable foreign keys
     await testSequelize.query("PRAGMA foreign_keys = ON");
-    
   } catch (error) {
     console.error("Failed to clean test database:", error);
     throw error;

@@ -14,7 +14,8 @@ export class ChallengeLoader {
 
   constructor(database?: Sequelize, challengesDir?: string) {
     this.db = database || sequelize;
-    this.challenges_dir = challengesDir || path.join(config.docker.challengesPath);
+    this.challenges_dir =
+      challengesDir || path.join(config.docker.challengesPath);
   }
 
   /**

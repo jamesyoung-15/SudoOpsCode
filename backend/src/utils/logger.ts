@@ -16,7 +16,7 @@ if (logToFile) {
     fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
   } catch (err) {
     // ignore mkdir errors; pino will throw if it cannot write
-    console.error(`Failed to create log directory: ${err}`);
+    // console.error(`Failed to create log directory: ${err}`);
   }
 }
 

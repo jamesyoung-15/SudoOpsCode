@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterAll,
+} from "@jest/globals";
 import { QueryTypes } from "sequelize";
 import {
   testSequelize,
@@ -31,24 +38,24 @@ describe("ProgressService", () => {
         {
           replacements: ["testuser", "hash"],
           type: QueryTypes.INSERT,
-        }
+        },
       );
       const [challengeId] = await testSequelize.query(
         "INSERT INTO challenges (title, description, difficulty, points, category, directory) VALUES (?, ?, ?, ?, ?, ?)",
         {
           replacements: ["Test", "Desc", "easy", 100, "linux", "test"],
           type: QueryTypes.INSERT,
-        }
+        },
       );
       await progressService.recordAttempt(1, 1, true);
 
-      const attempts = await testSequelize.query(
+      const attempts = (await testSequelize.query(
         "SELECT * FROM attempts WHERE user_id = ? AND challenge_id = ?",
         {
           replacements: [1, 1],
           type: QueryTypes.SELECT,
-        }
-      ) as any[];
+        },
+      )) as any[];
 
       expect(attempts).toHaveLength(1);
       expect(attempts[0].success).toBe(1);
@@ -62,7 +69,7 @@ describe("ProgressService", () => {
         {
           replacements: ["Test", "Desc", "easy", 100, "linux", "test"],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       const points = await progressService.getChallengePoints(1);

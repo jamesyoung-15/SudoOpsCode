@@ -21,8 +21,8 @@ jest.unstable_mockModule("../services/websocketService.js", () => ({
 
 // mock server
 const mockServer = {
-    on: jest.fn(),
-    listen: jest.fn(),
+  on: jest.fn(),
+  listen: jest.fn(),
 } as unknown as Server;
 
 // Import after mocks
@@ -132,7 +132,7 @@ describe("SessionManager", () => {
 
       const updated = sessionManager.getSession(session.id);
       expect(updated?.lastActivity.getTime()).toBeGreaterThan(
-        originalActivity.getTime()
+        originalActivity.getTime(),
       );
     });
 
@@ -154,7 +154,6 @@ describe("SessionManager", () => {
     });
 
     it("should close WebSocket connection when WebSocket service is set", (done) => {
-      
       const wsService = new WebSocketService(mockServer);
       sessionManager.setWebSocketService(wsService);
 
@@ -347,7 +346,9 @@ describe("SessionManager", () => {
     });
 
     it("should continue cleanup even if container removal fails", async () => {
-      mockRemoveContainer.mockRejectedValueOnce(new Error("Container removal failed"));
+      mockRemoveContainer.mockRejectedValueOnce(
+        new Error("Container removal failed"),
+      );
 
       const shortSessionManager = new SessionManager(50, 3600000);
       const session = shortSessionManager.createSession(1, 1, "container1");
