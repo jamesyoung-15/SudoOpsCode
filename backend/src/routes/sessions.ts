@@ -102,7 +102,10 @@ router.post(
       }
 
       // Check if already solved
-      const hasSolved = await progressService.hasSolved(userId, session.challengeId);
+      const hasSolved = await progressService.hasSolved(
+        userId,
+        session.challengeId,
+      );
       // Below for disabling re-submission after solve
       // if (hasSolved) {
       //   return res.status(400).json({
@@ -128,10 +131,17 @@ router.post(
       );
 
       // Record attempt and solve tables in single transaction
-      await progressService.recordValidation(userId, session.challengeId, isValid, hasSolved);
+      await progressService.recordValidation(
+        userId,
+        session.challengeId,
+        isValid,
+        hasSolved,
+      );
 
       if (isValid) {
-        const points = await progressService.getChallengePoints(session.challengeId);
+        const points = await progressService.getChallengePoints(
+          session.challengeId,
+        );
 
         logger.info(
           {

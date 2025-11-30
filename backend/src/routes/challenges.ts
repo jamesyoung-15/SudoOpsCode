@@ -13,7 +13,7 @@ const router = Router();
  */
 router.get("/public", async (req, res) => {
   try {
-    const challenges = await sequelize.query(
+    const challenges = (await sequelize.query(
       `SELECT 
         c.id,
         c.title,
@@ -29,8 +29,8 @@ router.get("/public", async (req, res) => {
       ORDER BY c.id`,
       {
         type: QueryTypes.SELECT,
-      }
-    ) as Array<{
+      },
+    )) as Array<{
       id: number;
       title: string;
       description: string;
@@ -56,7 +56,7 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.userId;
 
-    const challenges = await sequelize.query(
+    const challenges = (await sequelize.query(
       `SELECT 
         c.id,
         c.title,
@@ -79,8 +79,8 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: Response) => {
       {
         replacements: [userId, userId],
         type: QueryTypes.SELECT,
-      }
-    ) as ChallengeWithProgress[];
+      },
+    )) as ChallengeWithProgress[];
 
     res.json({ challenges });
   } catch (error) {
@@ -93,17 +93,20 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: Response) => {
  * GET /api/challenges/:id
  * Get a specific challenge with user progress
  */
-router.get("/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user!.userId;
-    const challengeId = parseInt(req.params.id);
+router.get(
+  "/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user!.userId;
+      const challengeId = parseInt(req.params.id);
 
-    if (isNaN(challengeId)) {
-      return res.status(400).json({ error: "Invalid challenge ID" });
-    }
+      if (isNaN(challengeId)) {
+        return res.status(400).json({ error: "Invalid challenge ID" });
+      }
 
-    const challenge = await sequelize.query(
-      `SELECT 
+      const challenge = (await sequelize.query(
+        `SELECT 
         c.id,
         c.title,
         c.description,
@@ -122,72 +125,81 @@ router.get("/:id", authenticateToken, async (req: AuthRequest, res: Response) =>
         GROUP BY challenge_id
       ) a ON c.id = a.challenge_id
       WHERE c.id = ?`,
-      {
-        replacements: [userId, userId, challengeId, challengeId],
-        type: QueryTypes.SELECT,
+        {
+          replacements: [userId, userId, challengeId, challengeId],
+          type: QueryTypes.SELECT,
+        },
+      )) as ChallengeWithProgress[];
+
+      if (challenge.length === 0) {
+        return res.status(404).json({ error: "Challenge not found" });
       }
-    ) as ChallengeWithProgress[];
 
-    if (challenge.length === 0) {
-      return res.status(404).json({ error: "Challenge not found" });
+      res.json({ challenge: challenge[0] });
+    } catch (error) {
+      logger.error({ error }, "Failed to fetch challenge");
+      res.status(500).json({ error: "Failed to fetch challenge" });
     }
-
-    res.json({ challenge: challenge[0] });
-  } catch (error) {
-    logger.error({ error }, "Failed to fetch challenge");
-    res.status(500).json({ error: "Failed to fetch challenge" });
-  }
-});
+  },
+);
 
 /**
  * GET /api/challenges/:id/solution
  * Get challenge solution (only if solved)
  */
-router.get("/:id/solution", authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user!.userId;
-    const challengeId = parseInt(req.params.id);
+router.get(
+  "/:id/solution",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user!.userId;
+      const challengeId = parseInt(req.params.id);
 
-    if (isNaN(challengeId)) {
-      return res.status(400).json({ error: "Invalid challenge ID" });
-    }
-
-    // Check if user has solved the challenge
-    const solve = await sequelize.query(
-      "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
-      {
-        replacements: [userId, challengeId],
-        type: QueryTypes.SELECT,
+      if (isNaN(challengeId)) {
+        return res.status(400).json({ error: "Invalid challenge ID" });
       }
-    );
 
-    if (solve.length === 0) {
-      return res.status(403).json({ error: "You must solve the challenge first" });
-    }
+      // Check if user has solved the challenge
+      const solve = await sequelize.query(
+        "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
+        {
+          replacements: [userId, challengeId],
+          type: QueryTypes.SELECT,
+        },
+      );
 
-    // Get the solution
-    const challenge = await sequelize.query(
-      "SELECT solution FROM challenges WHERE id = ?",
-      {
-        replacements: [challengeId],
-        type: QueryTypes.SELECT,
+      if (solve.length === 0) {
+        return res
+          .status(403)
+          .json({ error: "You must solve the challenge first" });
       }
-    ) as Array<{ solution: string | null }>;
 
-    if (challenge.length === 0) {
-      return res.status(404).json({ error: "Challenge not found" });
+      // Get the solution
+      const challenge = (await sequelize.query(
+        "SELECT solution FROM challenges WHERE id = ?",
+        {
+          replacements: [challengeId],
+          type: QueryTypes.SELECT,
+        },
+      )) as Array<{ solution: string | null }>;
+
+      if (challenge.length === 0) {
+        return res.status(404).json({ error: "Challenge not found" });
+      }
+
+      if (!challenge[0].solution) {
+        return res
+          .status(404)
+          .json({ error: "No solution available for this challenge" });
+      }
+
+      res.json({ solution: challenge[0].solution });
+    } catch (error) {
+      logger.error({ error }, "Failed to fetch solution");
+      res.status(500).json({ error: "Failed to fetch solution" });
     }
-
-    if (!challenge[0].solution) {
-      return res.status(404).json({ error: "No solution available for this challenge" });
-    }
-
-    res.json({ solution: challenge[0].solution });
-  } catch (error) {
-    logger.error({ error }, "Failed to fetch solution");
-    res.status(500).json({ error: "Failed to fetch solution" });
-  }
-});
+  },
+);
 
 /**
  * GET /api/challenges/stats/overview
@@ -195,7 +207,7 @@ router.get("/:id/solution", authenticateToken, async (req: AuthRequest, res: Res
  */
 router.get("/stats/overview", authenticateToken, async (req, res) => {
   try {
-    const stats = await sequelize.query(
+    const stats = (await sequelize.query(
       `SELECT 
         COUNT(DISTINCT c.id) as total_challenges,
         COUNT(DISTINCT CASE WHEN c.difficulty = 'easy' THEN c.id END) as easy_challenges,
@@ -207,8 +219,8 @@ router.get("/stats/overview", authenticateToken, async (req, res) => {
       LEFT JOIN solves s ON c.id = s.challenge_id`,
       {
         type: QueryTypes.SELECT,
-      }
-    ) as Array<{
+      },
+    )) as Array<{
       total_challenges: number;
       easy_challenges: number;
       medium_challenges: number;

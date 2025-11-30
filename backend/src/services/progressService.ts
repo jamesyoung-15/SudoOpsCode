@@ -6,14 +6,18 @@ export class ProgressService {
   /**
    * Record a solve attempt
    */
-  async recordAttempt(userId: number, challengeId: number, success: boolean): Promise<void> {
+  async recordAttempt(
+    userId: number,
+    challengeId: number,
+    success: boolean,
+  ): Promise<void> {
     try {
       await sequelize.query(
         "INSERT INTO attempts (user_id, challenge_id, success) VALUES (?, ?, ?)",
         {
           replacements: [userId, challengeId, success ? 1 : 0],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       logger.debug({ userId, challengeId, success }, "Attempt recorded");
@@ -34,7 +38,7 @@ export class ProgressService {
         {
           replacements: [userId, challengeId],
           type: QueryTypes.SELECT,
-        }
+        },
       );
 
       if (existingSolve.length > 0) {
@@ -48,7 +52,7 @@ export class ProgressService {
         {
           replacements: [userId, challengeId],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       logger.info({ userId, challengeId }, "Solve recorded");
@@ -77,7 +81,7 @@ export class ProgressService {
           replacements: [userId, challengeId, success ? 1 : 0],
           type: QueryTypes.INSERT,
           transaction: t,
-        }
+        },
       );
 
       // Record solve if successful
@@ -88,7 +92,7 @@ export class ProgressService {
             replacements: [userId, challengeId],
             type: QueryTypes.SELECT,
             transaction: t,
-          }
+          },
         );
 
         if (existingSolve.length === 0) {
@@ -98,7 +102,7 @@ export class ProgressService {
               replacements: [userId, challengeId],
               type: QueryTypes.INSERT,
               transaction: t,
-            }
+            },
           );
         }
       }
@@ -124,7 +128,7 @@ export class ProgressService {
       {
         replacements: [userId, challengeId],
         type: QueryTypes.SELECT,
-      }
+      },
     );
 
     return solve.length > 0;
@@ -134,13 +138,13 @@ export class ProgressService {
    * Get challenge points
    */
   async getChallengePoints(challengeId: number): Promise<number> {
-    const challenge = await sequelize.query(
+    const challenge = (await sequelize.query(
       "SELECT points FROM challenges WHERE id = ?",
       {
         replacements: [challengeId],
         type: QueryTypes.SELECT,
-      }
-    ) as { points: number }[];
+      },
+    )) as { points: number }[];
 
     return challenge[0]?.points || 0;
   }

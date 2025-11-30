@@ -50,13 +50,13 @@ router.post(
       }
 
       // Check if user exists
-      const existingUser = await sequelize.query(
+      const existingUser = (await sequelize.query(
         "SELECT id FROM users WHERE username = ?",
         {
           replacements: [username],
           type: QueryTypes.SELECT,
-        }
-      ) as User[];
+        },
+      )) as User[];
 
       if (existingUser.length > 0) {
         res.status(409).json({ error: "Username already taken" });
@@ -72,7 +72,7 @@ router.post(
         {
           replacements: [username, passwordHash],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       const userId = result[0] as number;
@@ -114,13 +114,13 @@ router.post(
       }
 
       // Find user
-      const user = await sequelize.query(
+      const user = (await sequelize.query(
         "SELECT id, username, password_hash FROM users WHERE username = ?",
         {
           replacements: [username],
           type: QueryTypes.SELECT,
-        }
-      ) as User[];
+        },
+      )) as User[];
 
       if (user.length === 0) {
         res.status(401).json({ error: "Invalid credentials" });
@@ -128,7 +128,10 @@ router.post(
       }
 
       // Verify password
-      const passwordValid = await bcrypt.compare(password, user[0].password_hash);
+      const passwordValid = await bcrypt.compare(
+        password,
+        user[0].password_hash,
+      );
 
       if (!passwordValid) {
         res.status(401).json({ error: "Invalid credentials" });

@@ -182,14 +182,17 @@ export class ChallengeLoader {
   /**
    * Insert or update challenge in database
    */
-  private async upsertChallenge(metadata: ChallengeMetadata, dirName: string): Promise<void> {
-    const existing = await sequelize.query(
+  private async upsertChallenge(
+    metadata: ChallengeMetadata,
+    dirName: string,
+  ): Promise<void> {
+    const existing = (await sequelize.query(
       "SELECT id FROM challenges WHERE directory = ?",
       {
         replacements: [dirName],
         type: QueryTypes.SELECT,
-      }
-    ) as { id: number }[];
+      },
+    )) as { id: number }[];
 
     if (existing.length > 0) {
       // Update existing challenge
@@ -208,7 +211,7 @@ export class ChallengeLoader {
             dirName,
           ],
           type: QueryTypes.UPDATE,
-        }
+        },
       );
 
       logger.debug(
@@ -231,7 +234,7 @@ export class ChallengeLoader {
             dirName,
           ],
           type: QueryTypes.INSERT,
-        }
+        },
       );
 
       logger.debug({ directory: dirName }, "Challenge inserted");
@@ -242,13 +245,13 @@ export class ChallengeLoader {
    * Get challenge directory path by ID
    */
   async getChallengeDirectory(challengeId: number): Promise<string> {
-    const challenge = await sequelize.query(
+    const challenge = (await sequelize.query(
       "SELECT directory FROM challenges WHERE id = ?",
       {
         replacements: [challengeId],
         type: QueryTypes.SELECT,
-      }
-    ) as { directory: string }[];
+      },
+    )) as { directory: string }[];
 
     if (challenge.length === 0) {
       throw new Error(`Challenge not found: ${challengeId}`);
