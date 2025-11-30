@@ -1,0 +1,20 @@
+id: create-file
+title: Create a File
+description: Create a file named `complete.txt` in the `/tmp` directory.
+difficulty: easy
+points: 10
+category: "linux, filesystem"
+solution: |
+  To complete this challenge, you need to create a file named `complete.txt` in the `/tmp` directory. You can do this using the `touch` command in a terminal. Here are the steps:
+  1. Open a terminal in the challenge environment.
+  2. Run the following command:
+      ```bash
+      touch /tmp/complete.txt
+      ```
+  3. Verify that the file has been created by running:
+      ```bash
+      cd /tmp
+      ls -l complete.txt
+      ```
+  You should see `complete.txt` listed in the output, indicating that the file has been successfully created.
+order: 1
