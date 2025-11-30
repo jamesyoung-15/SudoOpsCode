@@ -1,10 +1,16 @@
 import { sequelize } from "../db/database.js";
 import { logger } from "../utils/logger.js";
-import { QueryTypes } from "sequelize";
+import { QueryTypes, Sequelize } from "sequelize";
 
 export class ProgressService {
+  private db: Sequelize;
+
+  constructor(database?: Sequelize) {
+    this.db = database || sequelize;
+  }
+
   /**
-   * Record a solve attempt
+   * Record an attempt for a challenge
    */
   async recordAttempt(
     userId: number,
@@ -12,7 +18,7 @@ export class ProgressService {
     success: boolean,
   ): Promise<void> {
     try {
-      await sequelize.query(
+      await this.db.query(
         "INSERT INTO attempts (user_id, challenge_id, success) VALUES (?, ?, ?)",
         {
           replacements: [userId, challengeId, success ? 1 : 0],
@@ -20,7 +26,10 @@ export class ProgressService {
         },
       );
 
-      logger.debug({ userId, challengeId, success }, "Attempt recorded");
+      logger.debug(
+        { userId, challengeId, success },
+        "Attempt recorded",
+      );
     } catch (error) {
       logger.error({ error, userId, challengeId }, "Failed to record attempt");
       throw error;
@@ -28,12 +37,12 @@ export class ProgressService {
   }
 
   /**
-   * Record a successful solve
+   * Record a solve for a challenge
    */
   async recordSolve(userId: number, challengeId: number): Promise<void> {
     try {
       // Check if already solved
-      const existingSolve = await sequelize.query(
+      const existing = await this.db.query(
         "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
         {
           replacements: [userId, challengeId],
@@ -41,13 +50,12 @@ export class ProgressService {
         },
       );
 
-      if (existingSolve.length > 0) {
+      if (existing.length > 0) {
         logger.debug({ userId, challengeId }, "Challenge already solved");
         return;
       }
 
-      // Insert solve
-      await sequelize.query(
+      await this.db.query(
         "INSERT INTO solves (user_id, challenge_id) VALUES (?, ?)",
         {
           replacements: [userId, challengeId],
@@ -63,58 +71,57 @@ export class ProgressService {
   }
 
   /**
-   * Record validation result (attempt + solve if successful)
+   * Record validation result and update progress
    */
   async recordValidation(
     userId: number,
     challengeId: number,
     success: boolean,
-    alreadySolved = false,
+    alreadySolved: boolean,
   ): Promise<void> {
-    const t = await sequelize.transaction();
+    const transaction = await this.db.transaction();
 
     try {
       // Record attempt
-      await sequelize.query(
+      await this.db.query(
         "INSERT INTO attempts (user_id, challenge_id, success) VALUES (?, ?, ?)",
         {
           replacements: [userId, challengeId, success ? 1 : 0],
           type: QueryTypes.INSERT,
-          transaction: t,
+          transaction,
         },
       );
 
-      // Record solve if successful
+      // Record solve if successful and not already solved
       if (success && !alreadySolved) {
-        const existingSolve = await sequelize.query(
+        const existing = await this.db.query(
           "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
           {
             replacements: [userId, challengeId],
             type: QueryTypes.SELECT,
-            transaction: t,
+            transaction,
           },
         );
 
-        if (existingSolve.length === 0) {
-          await sequelize.query(
+        if (existing.length === 0) {
+          await this.db.query(
             "INSERT INTO solves (user_id, challenge_id) VALUES (?, ?)",
             {
               replacements: [userId, challengeId],
               type: QueryTypes.INSERT,
-              transaction: t,
+              transaction,
             },
           );
+
+          logger.info({ userId, challengeId }, "New solve recorded");
         }
       }
 
-      await t.commit();
+      await transaction.commit();
       logger.debug({ userId, challengeId, success }, "Validation recorded");
     } catch (error) {
-      await t.rollback();
-      logger.error(
-        { error, userId, challengeId },
-        "Failed to record validation",
-      );
+      await transaction.rollback();
+      logger.error({ error, userId, challengeId }, "Failed to record validation");
       throw error;
     }
   }
@@ -123,30 +130,40 @@ export class ProgressService {
    * Check if user has solved a challenge
    */
   async hasSolved(userId: number, challengeId: number): Promise<boolean> {
-    const solve = await sequelize.query(
-      "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
-      {
-        replacements: [userId, challengeId],
-        type: QueryTypes.SELECT,
-      },
-    );
+    try {
+      const result = await this.db.query(
+        "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
+        {
+          replacements: [userId, challengeId],
+          type: QueryTypes.SELECT,
+        },
+      );
 
-    return solve.length > 0;
+      return result.length > 0;
+    } catch (error) {
+      logger.error({ error, userId, challengeId }, "Failed to check solve status");
+      throw error;
+    }
   }
 
   /**
    * Get challenge points
    */
   async getChallengePoints(challengeId: number): Promise<number> {
-    const challenge = (await sequelize.query(
-      "SELECT points FROM challenges WHERE id = ?",
-      {
-        replacements: [challengeId],
-        type: QueryTypes.SELECT,
-      },
-    )) as { points: number }[];
+    try {
+      const result = await this.db.query(
+        "SELECT points FROM challenges WHERE id = ?",
+        {
+          replacements: [challengeId],
+          type: QueryTypes.SELECT,
+        },
+      ) as Array<{ points: number }>;
 
-    return challenge[0]?.points || 0;
+      return result.length > 0 ? result[0].points : 0;
+    } catch (error) {
+      logger.error({ error, challengeId }, "Failed to get challenge points");
+      throw error;
+    }
   }
 }
 

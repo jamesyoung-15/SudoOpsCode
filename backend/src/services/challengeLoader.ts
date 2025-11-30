@@ -5,25 +5,31 @@ import { sequelize } from "../db/database.js";
 import { logger } from "../utils/logger.js";
 import { ChallengeMetadata } from "../types/challenge.js";
 import { config } from "../config/index.js";
-import { QueryTypes } from "sequelize";
+import { QueryTypes, Sequelize } from "sequelize";
 
 export class ChallengeLoader {
-  private readonly CHALLENGES_DIR = path.join(config.docker.challengesPath);
+  private challenges_dir: string;
   private readonly REQUIRED_FILES = ["challenge.yaml", "validate.sh"];
+  private db: Sequelize;
+
+  constructor(database?: Sequelize, challengesDir?: string) {
+    this.db = database || sequelize;
+    this.challenges_dir = challengesDir || path.join(config.docker.challengesPath);
+  }
 
   /**
    * Load all challenges from the challenges directory
    */
   async loadChallenges(): Promise<void> {
-    logger.info({ dir: this.CHALLENGES_DIR }, "Loading challenges...");
+    logger.info({ dir: this.challenges_dir }, "Loading challenges...");
 
-    if (!fs.existsSync(this.CHALLENGES_DIR)) {
+    if (!fs.existsSync(this.challenges_dir)) {
       logger.warn("Challenges directory does not exist, creating...");
-      fs.mkdirSync(this.CHALLENGES_DIR, { recursive: true });
+      fs.mkdirSync(this.challenges_dir, { recursive: true });
       return;
     }
 
-    const entries = fs.readdirSync(this.CHALLENGES_DIR, {
+    const entries = fs.readdirSync(this.challenges_dir, {
       withFileTypes: true,
     });
     const challengeDirs = entries
@@ -54,7 +60,7 @@ export class ChallengeLoader {
    * Load a single challenge
    */
   private async loadChallenge(dirName: string): Promise<void> {
-    const challengePath = path.join(this.CHALLENGES_DIR, dirName);
+    const challengePath = path.join(this.challenges_dir, dirName);
 
     // Validate directory structure
     this.validateChallengeDirectory(challengePath, dirName);
@@ -186,7 +192,7 @@ export class ChallengeLoader {
     metadata: ChallengeMetadata,
     dirName: string,
   ): Promise<void> {
-    const existing = (await sequelize.query(
+    const existing = (await this.db.query(
       "SELECT id FROM challenges WHERE directory = ?",
       {
         replacements: [dirName],
@@ -196,7 +202,7 @@ export class ChallengeLoader {
 
     if (existing.length > 0) {
       // Update existing challenge
-      await sequelize.query(
+      await this.db.query(
         `UPDATE challenges 
          SET title = ?, description = ?, difficulty = ?, points = ?, category = ?, solution = ?
          WHERE directory = ?`,
@@ -220,7 +226,7 @@ export class ChallengeLoader {
       );
     } else {
       // Insert new challenge
-      await sequelize.query(
+      await this.db.query(
         `INSERT INTO challenges (title, description, difficulty, points, category, solution, directory)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         {
@@ -245,7 +251,7 @@ export class ChallengeLoader {
    * Get challenge directory path by ID
    */
   async getChallengeDirectory(challengeId: number): Promise<string> {
-    const challenge = (await sequelize.query(
+    const challenge = (await this.db.query(
       "SELECT directory FROM challenges WHERE id = ?",
       {
         replacements: [challengeId],
@@ -257,7 +263,7 @@ export class ChallengeLoader {
       throw new Error(`Challenge not found: ${challengeId}`);
     }
 
-    return path.join(this.CHALLENGES_DIR, challenge[0].directory);
+    return path.join(this.challenges_dir, challenge[0].directory);
   }
 }
 
