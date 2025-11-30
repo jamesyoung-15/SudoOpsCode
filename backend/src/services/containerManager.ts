@@ -117,9 +117,9 @@ CMD ["sleep", "infinity"]
         NetworkMode: "none", // No network access
       },
       Labels: {
-        "ctf.user_id": userId.toString(),
-        "ctf.challenge_id": challengeId.toString(),
-        "ctf.created_at": new Date().toISOString(),
+        "challenges.user_id": userId.toString(),
+        "challenges.challenge_id": challengeId.toString(),
+        "challenges.created_at": new Date().toISOString(),
       },
     });
 
@@ -243,13 +243,13 @@ CMD ["sleep", "infinity"]
   }
 
   /**
-   * Cleanup all CTF containers
+   * Cleanup all containers
    */
   async cleanupAllContainers(): Promise<void> {
     const containers = await docker.listContainers({
       all: true,
       filters: {
-        label: ["ctf.user_id"],
+        label: ["challenges.user_id"],
       },
     });
 
