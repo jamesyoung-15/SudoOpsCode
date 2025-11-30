@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { JWTPayload } from "../types/index.js";
+import { JWTPayload } from "../types/auth.js";
 import { logger } from "../utils/logger.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;

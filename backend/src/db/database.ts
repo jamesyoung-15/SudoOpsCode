@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { Sequelize } from "sequelize";
 import { logger } from "../utils/logger.js";
 import path from "path";
 import fs from "fs";
@@ -11,16 +11,17 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-export const db = new Database(dbPath);
-
-// Enable WAL mode for better concurrency
-db.pragma("journal_mode = WAL");
+export const sequelize = new Sequelize({
+  dialect: "sqlite",
+  storage: dbPath,
+  logging: (msg) => logger.debug(msg),
+});
 
 // Initialize schema
-export const initializeDatabase = () => {
+export const initializeDatabase = async () => {
   logger.info("Initializing database schema...");
 
-  db.exec(`
+  await sequelize.query(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -78,7 +79,7 @@ export const initializeDatabase = () => {
   logger.info("Database schema initialized");
 };
 
-export const closeDatabase = () => {
-  db.close();
+export const closeDatabase = async () => {
+  await sequelize.close();
   logger.info("Database closed");
 };

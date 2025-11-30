@@ -6,11 +6,14 @@ import { logger } from "./utils/logger.js";
 import { initializeDatabase, closeDatabase } from "./db/database.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/sessions.js";
-import { ContainerPool } from "./services/containerPool.js";
-import { SessionManager } from "./services/sessionManager.js";
-import { CleanupService } from "./services/cleanup.js";
-import { WebSocketService } from "./services/webSocket.js";
-import { dockerConfig } from "./config/docker.js";
+import challengeRoutes from "./routes/challenges.js";
+import progressRoutes from "./routes/progress.js";
+import leaderboardRoutes from "./routes/leaderboard.js";
+import { WebSocketService } from "./services/websocketService.js";
+import { sessionManager } from "./services/sessionManager.js";
+import { containerManager } from "./services/containerManager.js";
+import { cleanupJob } from "./services/cleanupJob.js";
+import { challengeLoader } from "./services/challengeLoader.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -20,13 +23,6 @@ const app = express();
 const PORT = process.env.EXPRESS_PORT || 3000;
 const server = createServer.createServer(app);
 
-// Initialize services
-export const containerPool = new ContainerPool(dockerConfig);
-export const sessionManager = new SessionManager(
-  dockerConfig.idleTimeoutMs,
-  dockerConfig.maxSessionTimeMs,
-);
-const cleanupService = new CleanupService(sessionManager, containerPool);
 let webSocketService: WebSocketService;
 
 // Middleware
@@ -48,21 +44,22 @@ app.use((req, res, next) => {
   next();
 });
 
-// temp add html serving
+// Static files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// Serve static files
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/challenges", challengeRoutes);
+app.use("/api/progress", progressRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 app.get("/", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
@@ -73,14 +70,19 @@ const startServer = async () => {
     // Initialize database
     initializeDatabase();
 
-    // Initialize container pool
-    await containerPool.initialize();
+    // Load challenges
+    await challengeLoader.loadChallenges();
+
+    // Ensure Docker image exists
+    await containerManager.ensureImage();
 
     // Initialize WebSocket service
     webSocketService = new WebSocketService(server);
+    sessionManager.setWebSocketService(webSocketService);
+    cleanupJob.setWebSocketService(webSocketService);
 
-    // Start cleanup service
-    cleanupService.start();
+    // Start cleanup job
+    cleanupJob.start();
 
     // Start server
     server.listen(PORT, () => {
@@ -88,16 +90,50 @@ const startServer = async () => {
     });
 
     // Graceful shutdown
+    let isShuttingDown = false;
     const shutdown = async () => {
+      if (isShuttingDown) return;
+
+      isShuttingDown = true;
       logger.info("Shutting down gracefully");
 
-      cleanupService.stop();
-
-      server.close(async () => {
-        await containerPool.cleanup();
-        closeDatabase();
-        process.exit(0);
+      // Stop accepting new connections
+      server.close(() => {
+        logger.info("HTTP server closed");
       });
+
+      // Stop cleanup job
+      cleanupJob.stop();
+
+      // Close all WebSocket connections (don't wait)
+      webSocketService.shutdown();
+
+      // Give streams a moment to close
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Clean up all active sessions
+      const activeSessions = sessionManager.getActiveSessions();
+      logger.info(
+        { count: activeSessions.length },
+        "Cleaning up active sessions",
+      );
+
+      for (const session of activeSessions) {
+        try {
+          await containerManager.removeContainer(session.containerId);
+          sessionManager.endSession(session.id);
+        } catch (error) {
+          logger.error(
+            { error, sessionId: session.id },
+            "Failed to cleanup session",
+          );
+        }
+      }
+
+      // Close database
+      closeDatabase();
+
+      process.exit(0);
     };
 
     process.on("SIGTERM", shutdown);

@@ -10,16 +10,13 @@ const logToFile =
   process.env.LOG_TO_FILE === "true" || process.env.LOG_TO_FILE === "1";
 const logFilePath = process.env.LOG_FILE_PATH || "./logs/app.log";
 
-console.log(`Logger level set to: ${level}`);
-console.log(`Logging to file: ${logFilePath}`);
-console.log(`Log to file enabled: ${logToFile}`);
-
 // ensure directory exists when logging to file
 if (logToFile) {
   try {
     fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
   } catch (err) {
     // ignore mkdir errors; pino will throw if it cannot write
+    console.error(`Failed to create log directory: ${err}`);
   }
 }
 

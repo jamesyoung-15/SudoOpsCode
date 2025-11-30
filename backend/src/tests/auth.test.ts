@@ -3,7 +3,7 @@ import request from "supertest";
 import express, { Router } from "express";
 import { authenticateToken } from "../middleware/auth.js";
 import jwt from "jsonwebtoken";
-import { JWTPayload } from "../types/index.js";
+import { JWTPayload } from "../types/auth.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
 
@@ -26,6 +26,8 @@ const createTestApp = () => {
 describe("Auth Middleware", () => {
   it("should allow access with valid token", async () => {
     const app = createTestApp();
+
+    // create dummy user with signed JWT
     const payload: JWTPayload = { userId: 1, username: "testuser" };
     const token = jwt.sign(payload, JWT_SECRET);
 
