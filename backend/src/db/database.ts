@@ -16,10 +16,10 @@ export const db = new Database(dbPath);
 // Enable WAL mode for better concurrency
 db.pragma("journal_mode = WAL");
 
+// Initialize schema
 export const initializeDatabase = () => {
-  logger.info("Initializing database...");
+  logger.info("Initializing database schema...");
 
-  // Creates tables if they do not exist
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,33 +28,57 @@ export const initializeDatabase = () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
     CREATE TABLE IF NOT EXISTS challenges (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
-      initial_files TEXT,
-      validation_script TEXT NOT NULL,
-      points INTEGER DEFAULT 10
+      difficulty TEXT NOT NULL CHECK(difficulty IN ('easy', 'medium', 'hard')),
+      points INTEGER NOT NULL,
+      category TEXT NOT NULL,
+      solution TEXT,
+      directory TEXT NOT NULL UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS submissions (
+    CREATE INDEX IF NOT EXISTS idx_challenges_difficulty ON challenges(difficulty);
+    CREATE INDEX IF NOT EXISTS idx_challenges_category ON challenges(category);
+    CREATE INDEX IF NOT EXISTS idx_challenges_directory ON challenges(directory);
+
+    CREATE TABLE IF NOT EXISTS attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       challenge_id INTEGER NOT NULL,
-      passed BOOLEAN NOT NULL,
-      submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(user_id) REFERENCES users(id),
-      FOREIGN KEY(challenge_id) REFERENCES challenges(id)
+      success BOOLEAN NOT NULL,
+      attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
     );
 
-    CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
-    CREATE INDEX IF NOT EXISTS idx_submissions_challenge_id ON submissions(challenge_id);
+    CREATE INDEX IF NOT EXISTS idx_attempts_user_id ON attempts(user_id);
+    CREATE INDEX IF NOT EXISTS idx_attempts_challenge_id ON attempts(challenge_id);
+    CREATE INDEX IF NOT EXISTS idx_attempts_success ON attempts(success);
+
+    CREATE TABLE IF NOT EXISTS solves (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      challenge_id INTEGER NOT NULL,
+      solved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, challenge_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_solves_user_id ON solves(user_id);
+    CREATE INDEX IF NOT EXISTS idx_solves_challenge_id ON solves(challenge_id);
+    CREATE INDEX IF NOT EXISTS idx_solves_solved_at ON solves(solved_at);
   `);
 
-  logger.info("Database initialized successfully");
+  logger.info("Database schema initialized");
 };
 
 export const closeDatabase = () => {
   db.close();
-  logger.info("Database connection closed");
+  logger.info("Database closed");
 };
