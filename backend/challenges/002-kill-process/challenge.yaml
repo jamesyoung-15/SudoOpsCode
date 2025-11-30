@@ -1,0 +1,25 @@
+id: kill-process
+title: Kill the Process
+description: |
+  There is a Python script named `unwanted_process` running in the background. Your task is to identify and terminate this process using appropriate Linux commands.
+difficulty: easy
+points: 15
+category: "linux, process-management"
+solution: |
+  To complete this challenge, you need to identify and kill the process named `unwanted_process`. Here are the steps to achieve this:
+  1. Open a terminal in the challenge environment.
+  2. Use the `ps` command to list all running processes and find the PID of `unwanted_process`:
+      ```bash
+      ps aux | grep unwanted_process
+      ```
+  3. Once you have the PID, use the `kill` command to terminate the process:
+      ```bash
+      kill <PID>
+      ```
+      Replace `<PID>` with the actual process ID you found in the previous step.
+  4. Verify that the process has been terminated by running the `ps` command again
+      ```bash
+      ps aux | grep unwanted_process
+      ```
+      You should not see `unwanted_process` listed in the output, indicating that the process has been successfully killed.
+order: 2

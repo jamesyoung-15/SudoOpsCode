@@ -1,0 +1,33 @@
+FROM alpine:latest
+
+# Install common tools
+RUN apk add --update --no-cache \
+    bash \
+    vim \
+    nano \
+    curl \
+    grep \
+    sed \
+    busybox \
+    coreutils \
+    util-linux \
+    procps \
+    net-tools \
+    bind-tools \
+    sudo \
+    python3
+
+# Create non-root user
+RUN adduser -D -s /bin/bash challenger
+
+# Create validation scripts directory
+RUN mkdir -p /validate && chown challenger:challenger /validate
+
+# Set working directory
+WORKDIR /home/challenger
+
+# Switch to non-root user
+USER challenger
+
+# Keep container running
+CMD ["sleep", "infinity"]
