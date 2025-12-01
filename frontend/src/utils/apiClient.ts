@@ -1,4 +1,7 @@
-import type { ChallengesResponse } from "../types/Challenge";
+import type {
+  ChallengesResponse,
+  ChallengeDetailResponse,
+} from "../types/Challenge";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3008";
@@ -56,11 +59,13 @@ class ApiClient {
       const error = await response
         .json()
         .catch(() => ({ message: "Request failed" }));
-      
+
       // Only redirect to login on 401 if NOT on auth endpoints
       // (login/register failures should show error, not redirect)
-      const isAuthEndpoint = endpoint.includes('/api/auth/login') || endpoint.includes('/api/auth/register');
-      
+      const isAuthEndpoint =
+        endpoint.includes("/api/auth/login") ||
+        endpoint.includes("/api/auth/register");
+
       if (response.status === 401 && !isAuthEndpoint) {
         sessionStorage.removeItem("auth_token");
         sessionStorage.removeItem("auth_user");
@@ -88,13 +93,16 @@ class ApiClient {
     });
   }
 
-  // Example protected endpoint
-  async getChallenges(): Promise<unknown> {
-    return this.request("/api/challenges");
+  // Get individual challenge (protected)
+  async getChallenge(id: number): Promise<ChallengeDetailResponse> {
+    return this.request(`/api/challenges/${id}`);
   }
 
   // list challenges with pagination
-  async getPublicChallenges(page: number = 1, limit: number = 20): Promise<ChallengesResponse> {
+  async getPublicChallenges(
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<ChallengesResponse> {
     return this.request(`/api/challenges/public?page=${page}&limit=${limit}`);
   }
 }
