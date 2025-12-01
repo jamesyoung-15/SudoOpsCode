@@ -9,6 +9,24 @@ interface Challenge {
   solve_count: number;
 }
 
+interface ChallengeUserResponse {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: "easy" | "medium" | "hard";
+  points: number;
+  category: string;
+  solution: string | null;
+  directory: string;
+  created_at: string;
+  solved: boolean;
+  attempts: number;
+}
+
+interface ChallengeDetailResponse {
+  challenge: ChallengeUserResponse;
+}
+
 interface PaginationInfo {
   page: number;
   limit: number;
@@ -23,4 +41,10 @@ interface ChallengesResponse {
   pagination: PaginationInfo;
 }
 
-export type { Challenge, PaginationInfo, ChallengesResponse };
+export type {
+  Challenge,
+  PaginationInfo,
+  ChallengesResponse,
+  ChallengeUserResponse,
+  ChallengeDetailResponse,
+};

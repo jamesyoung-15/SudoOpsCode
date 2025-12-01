@@ -27,7 +27,9 @@ export default function Challenges() {
       setChallenges(response.challenges);
       setPagination(response.pagination);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load challenges");
+      setError(
+        err instanceof Error ? err.message : "Failed to load challenges",
+      );
     } finally {
       setLoading(false);
     }
@@ -43,7 +45,10 @@ export default function Challenges() {
   };
 
   const parseCategories = (categoryString: string): string[] => {
-    return categoryString.split(',').map(cat => cat.trim()).filter(cat => cat.length > 0);
+    return categoryString
+      .split(",")
+      .map((cat) => cat.trim())
+      .filter((cat) => cat.length > 0);
   };
 
   const handleChallengeClick = (id: number) => {
@@ -103,7 +108,9 @@ export default function Challenges() {
                 <div className="card-title-section">
                   <h3 className="challenge-title">{`${idx + 1}. ${challenge.title}`}</h3>
                 </div>
-                <span className={`difficulty-badge ${getDifficultyClass(challenge.difficulty)}`}>
+                <span
+                  className={`difficulty-badge ${getDifficultyClass(challenge.difficulty)}`}
+                >
                   {challenge.difficulty}
                 </span>
               </div>
@@ -142,7 +149,9 @@ export default function Challenges() {
                     <span className="challenge-title">{`${idx + 1}. ${challenge.title}`}</span>
                   </td>
                   <td>
-                    <span className={`difficulty-badge ${getDifficultyClass(challenge.difficulty)}`}>
+                    <span
+                      className={`difficulty-badge ${getDifficultyClass(challenge.difficulty)}`}
+                    >
                       {challenge.difficulty}
                     </span>
                   </td>
@@ -172,32 +181,35 @@ export default function Challenges() {
             >
               Previous
             </button>
-            
-            <div className="pagination-pages">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                let pageNum: number;
-                
-                if (pagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
 
-                return (
-                  <button
-                    key={pageNum}
-                    className={`pagination-page ${currentPage === pageNum ? "active" : ""}`}
-                    onClick={() => handlePageChange(pageNum)}
-                    disabled={loading}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
+            <div className="pagination-pages">
+              {Array.from(
+                { length: Math.min(5, pagination.totalPages) },
+                (_, i) => {
+                  let pageNum: number;
+
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`pagination-page ${currentPage === pageNum ? "active" : ""}`}
+                      onClick={() => handlePageChange(pageNum)}
+                      disabled={loading}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                },
+              )}
             </div>
 
             <button

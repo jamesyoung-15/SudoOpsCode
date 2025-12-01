@@ -1,7 +1,7 @@
 .challenges-container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
 .challenges-header {
@@ -82,7 +82,7 @@
 }
 
 .card-solves {
-  color: #4CAF50;
+  color: #4caf50;
   font-size: 0.9rem;
   white-space: nowrap;
 }
@@ -163,7 +163,7 @@
 }
 
 .solves-cell {
-  color: #4CAF50;
+  color: #4caf50;
   text-align: center;
   width: 80px;
 }
@@ -181,7 +181,7 @@
 
 .difficulty-easy {
   background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
+  color: #4caf50;
   border: 1px solid rgba(76, 175, 80, 0.2);
 }
 
