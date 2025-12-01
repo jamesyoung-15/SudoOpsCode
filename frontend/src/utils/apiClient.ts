@@ -51,17 +51,21 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      // Handle 401 Unauthorized - token expired or invalid
-      if (response.status === 401) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Request failed" }));
+      
+      // Only redirect to login on 401 if NOT on auth endpoints
+      // (login/register failures should show error, not redirect)
+      const isAuthEndpoint = endpoint.includes('/api/auth/login') || endpoint.includes('/api/auth/register');
+      
+      if (response.status === 401 && !isAuthEndpoint) {
         sessionStorage.removeItem("auth_token");
         sessionStorage.removeItem("auth_user");
         window.location.href = "/login";
       }
 
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Request failed" }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new Error(error.error || `HTTP ${response.status}`);
     }
 
     return response.json();
