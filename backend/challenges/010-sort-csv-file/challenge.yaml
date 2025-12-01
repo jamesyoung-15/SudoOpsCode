@@ -1,0 +1,14 @@
+id: sort-csv-file
+title: Sort the CSV File
+description: |
+  A CSV file is stored in `/home/challenger/csv_test/data.csv`.  
+  Sort it by the **second column**, numerically, and write the sorted lines to `/tmp/csv_sorted`.
+difficulty: medium
+points: 15
+category: "linux, text-processing"
+solution: |
+  You can use the `sort` command to sort the CSV file by the second column numerically:
+  ```bash
+  sort -t',' -k2n /home/challenger/csv_test/data.csv > /tmp/csv_sorted
+  ```
+order: 10
