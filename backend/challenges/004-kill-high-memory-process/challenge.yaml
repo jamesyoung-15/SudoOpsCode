@@ -1,0 +1,17 @@
+id: kill-high-memory-process
+title: Kill the High-Memory Process
+description: |
+  Two Python processes are running.  
+  One of them is holding a large chunk of memory (around 25MB).  
+  Your task is to identify which process is consuming the most memory and terminate it.
+difficulty: medium
+points: 20
+category: "linux, process-management"
+solution: |
+  1. You can use `top`, `ps aux`, or `ps -o pid,rss,comm` to list processes by memory usage. With `top`, press `M` to sort by memory.
+  2. Identify the process with the highest memory usage.
+  3. Kill it using:
+      ```bash
+      kill <PID>
+      ```
+order: 4
