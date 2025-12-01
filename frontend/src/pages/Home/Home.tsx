@@ -17,7 +17,7 @@ const Home = () => {
             interactive terminal environment.
           </p>
           <div className="cta-buttons">
-            <Link to="/signup" className="btn btn-primary">
+            <Link to="/register" className="btn btn-primary">
               Sign Up for Free
             </Link>
             <Link to="/challenges" className="btn btn-secondary">

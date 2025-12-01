@@ -1,15 +1,24 @@
 import "./Navbar.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { VscTerminalBash } from "react-icons/vsc";
 import { RxHamburgerMenu } from "react-icons/rx";
 import { IoCloseOutline } from "react-icons/io5";
 import { useState } from "react";
+import { useAuthStore } from "../../store/authStore";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+    navigate("/");
   };
 
   return (
@@ -29,12 +38,26 @@ const Navbar = () => {
       </div>
       <div className="navbar-right">
         <nav className="navbar-auth">
-          <Link to="/login" className="navbar-link">
-            Login
-          </Link>
-          <Link to="/signup" className="navbar-link navbar-signup">
-            Sign Up
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <span className="navbar-username">{user?.username}</span>
+              <button
+                onClick={handleLogout}
+                className="navbar-link navbar-logout"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="navbar-link">
+                Login
+              </Link>
+              <Link to="/register" className="navbar-link navbar-signup">
+                Sign Up
+              </Link>
+            </>
+          )}
         </nav>
       </div>
       <button
@@ -56,16 +79,30 @@ const Navbar = () => {
           <Link to="/challenges" className="navbar-link" onClick={toggleMenu}>
             Challenges
           </Link>
-          <Link to="/login" className="navbar-link" onClick={toggleMenu}>
-            Login
-          </Link>
-          <Link
-            to="/signup"
-            className="navbar-link navbar-signup"
-            onClick={toggleMenu}
-          >
-            Sign Up
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <span className="navbar-username">{user?.username}</span>
+              <button
+                onClick={handleLogout}
+                className="navbar-link navbar-logout"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="navbar-link" onClick={toggleMenu}>
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="navbar-link navbar-signup"
+                onClick={toggleMenu}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       )}
     </div>
