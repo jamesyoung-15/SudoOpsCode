@@ -1,0 +1,159 @@
+.homepage {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    gap: 4rem;
+}
+
+.homepage-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    max-width: 800px;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1.2;
+    background: linear-gradient(135deg, #ffb700 0%, #ff8c00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: #b0b0b0;
+    max-width: 600px;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.btn-primary {
+    background-color: #ffb700;
+    color: #000;
+}
+
+.btn-primary:hover {
+    background-color: #ff8c00;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 183, 0, 0.3);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #ffb700;
+    border-color: #ffb700;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 183, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.features-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.feature-card {
+    background-color: var(--secondary-color);
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    border-color: #ffb700;
+}
+
+.feature-icon {
+    color: #ffb700;
+    margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    color: #b0b0b0;
+    font-size: 1rem;
+}
+
+.stats-section {
+    display: flex;
+    justify-content: center;
+    gap: 4rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat h2 {
+    font-size: 3rem;
+    color: #ffb700;
+    margin-bottom: 0.5rem;
+}
+
+.stat p {
+    font-size: 1.125rem;
+    color: #b0b0b0;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .stats-section {
+        gap: 2rem;
+    }
+
+    .stat h2 {
+        font-size: 2rem;
+    }
+}
