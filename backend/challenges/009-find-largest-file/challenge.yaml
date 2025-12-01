@@ -1,0 +1,22 @@
+id: find-largest-file
+title: Find the Largest File
+description: |
+  Several binary files of different sizes are stored in `/home/challenger/size_test`.  
+  Find the largest file and write its *full path* to `/tmp/largest_found`.
+difficulty: easy
+points: 15
+category: "linux, filesystem"
+solution: |
+  You can use the `ls` command with sorting to find the largest file:
+
+  ```bash
+  ls -S /home/challenger/size_test
+  ```
+
+  The largest file will be the first in the list. Write its full path to the output file:
+
+  ```bash
+  echo "/home/challenger/size_test/b.bin" > /tmp/largest_found
+  ```
+
+order: 9
