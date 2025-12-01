@@ -1,0 +1,23 @@
+id: find-dns
+title: Find the DNS Server
+description: |
+  A fake DNS configuration file has been created at `/home/challenger/network_info/resolv.conf`.
+  Your task is to determine the **primary DNS server** (the first `nameserver` entry)
+  and write it to `/tmp/dns_found`.
+
+difficulty: easy
+points: 10
+category: "linux, networking, text-processing"
+solution: |
+  The DNS is the first nameserver line. For example, you can use:
+
+  ```bash
+  cat /home/challenger/network_info/resolv.conf | grep "nameserver"
+  ```
+  Then write the first nameserver to the output file:
+
+  ```bash
+  echo "8.8.8.8" > /tmp/dns_found
+  ```
+
+order: 11

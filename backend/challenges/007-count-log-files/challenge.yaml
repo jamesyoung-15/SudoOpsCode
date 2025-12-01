@@ -1,0 +1,16 @@
+id: count-log-files
+title: Count the Log Files
+description: |
+  The folder `/home/challenger/file_count` contains various files with different extensions.  
+  Your task is to count only the `.log` files and write the number into `/tmp/user_count`.
+difficulty: easy
+points: 10
+category: "linux, filesystem"
+solution: |
+  Count `.log` files using `find` and `wc -l`:
+  
+  ```bash
+  find /home/challenger/file_count -type f -name "*.log" | wc -l > /tmp/user_count
+  ```
+  
+order: 7

@@ -1,0 +1,24 @@
+id: find-hidden-file
+title: Find the Hidden File
+description: |
+  A deep directory tree has been created with many files.  
+  One of these files contains the text `FLAG: success`.  
+  Your task is to locate this file, then write the word `FOUND` into it to prove you located it.
+  Hint: You can use commands like `find` or `grep` to help with your search.
+difficulty: easy
+points: 15
+category: "linux, filesystem"
+solution: |
+  1. Use `find` to search for the file:
+      ```bash
+      find /home/challenger/search_challenge -type f -name "secret_file.txt"
+      ```
+  2. Or search by content:
+      ```bash
+      grep -R "FLAG: success" /home/challenger/search_challenge
+      ```
+  3. Append the tag:
+      ```bash
+      echo FOUND >> /path/to/secret_file.txt
+      ```
+order: 6

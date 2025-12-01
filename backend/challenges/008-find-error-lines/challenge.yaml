@@ -1,0 +1,15 @@
+id: find-error-lines
+title: Count Error Lines
+description: |
+  A log file has been generated in `/home/challenger/logs/app.log`.  
+  Your task is to count how many lines contain the word `ERROR` and write that number to `/tmp/error_count`.
+difficulty: easy
+points: 10
+category: "linux, text-processing"
+solution: |
+  Count lines with ERROR using `grep -c`:
+  ```bash
+  grep -c "ERROR" /home/challenger/logs/app.log > /tmp/error_count
+  ```
+
+order: 8
