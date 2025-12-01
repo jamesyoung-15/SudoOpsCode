@@ -36,3 +36,37 @@ a {
   margin: 0 auto;
   padding: 1rem;
 }
+
+/* Toast customization to match theme */
+.Toastify__toast {
+  background: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-family: var(--font-family);
+}
+
+.Toastify__toast--error {
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.Toastify__toast--success {
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.Toastify__toast--info {
+  border-color: rgba(255, 183, 0, 0.3);
+}
+
+.Toastify__progress-bar {
+  background: var(--yellow-color);
+}
+
+.Toastify__close-button {
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
