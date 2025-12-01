@@ -307,6 +307,7 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
           <div className="success-overlay">
             <div className="success-content">
               <div className="success-icon">
+                {/* Big checkmark logo */}
                 <svg
                   width="80"
                   height="80"
@@ -323,9 +324,6 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
               </div>
               <h2 className="success-title">Challenge Complete!</h2>
               <p className="success-message">{solveMessage}</p>
-              {solvePoints > 0 && (
-                <p className="success-points">+{solvePoints} points</p>
-              )}
               <button className="success-btn" onClick={handleBackToChallenges}>
                 Back to Challenges
               </button>

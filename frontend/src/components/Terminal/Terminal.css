@@ -241,13 +241,6 @@
   line-height: 1.6;
 }
 
-.success-points {
-  color: var(--yellow-color);
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-}
-
 .success-btn {
   padding: 0.75rem 2rem;
   background: var(--yellow-color);
@@ -307,9 +300,5 @@
 
   .success-message {
     font-size: 1rem;
-  }
-
-  .success-points {
-    font-size: 1.25rem;
   }
 }
