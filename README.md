@@ -1,8 +1,10 @@
 # SudoOpsCode
 
-Basically Leetcode for Linux admin. Platform for solving Linux/DevOps challenges inside Docker containers on the web browser. Done for course project for METCS602.
+Basically Leetcode for Linux admin. Platform for solving Linux/DevOps challenges inside Docker containers on the web browser.
 
-Uses NodeJS + Express in backend w/ Docker containers for terminal environments.
+Frontend uses React + Vite + TS + CSS.
+
+Backend uses Node + Express to manage challenge sessions, Docker containers, and user progress. SQLite used for database to store user info and Docker for providing isolated Linux environments for each challenge session, interacted through websockets.
 
 ## Preview
 
@@ -84,8 +86,10 @@ Full instructions on free [setup](./docs/application_deployment.md)
 
 ### "Prod" Deployment
 
-- Terraform for frontend (S3 + Cloudflare)
+- AWS S3 for frontend
 - Oracle Instance for backend (manual setup)
+- Cloudflare for CDN, DNS provider
+- Terraform for IaC (only for frontend)
 
 ## Hosting Diagram
 
