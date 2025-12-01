@@ -1,0 +1,20 @@
+id: find-high-cpu
+title: Find and Kill the High-CPU Process
+description: |
+  A Python script is running an infinite loop and consuming CPU.  
+  Your task is to identify which process is using excessive CPU and terminate it.
+difficulty: medium
+points: 20
+category: "linux, process-management"
+solution: |
+  1. Use `top`, `ps aux`, or `ps -o pid,pcpu,comm` to identify the highest CPU-using process.
+  2. Find the PID of the rogue Python loop.
+  3. Kill it using:
+      ```bash
+      kill <PID>
+      ```
+  4. Verify it's gone with:
+      ```bash
+      ps aux
+      ```
+order: 3
