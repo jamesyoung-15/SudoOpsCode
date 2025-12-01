@@ -39,6 +39,17 @@ interface ValidationResponse {
   points?: number;
 }
 
+interface UserSessionsResponse {
+  sessions: Array<{
+    sessionId: string;
+    challengeId: number;
+    status: string;
+    createdAt: string;
+    expiresAt: string;
+    lastActivity: string;
+  }>;
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -126,6 +137,10 @@ class ApiClient {
     });
   }
 
+  async getUserSessions(): Promise<UserSessionsResponse> {
+    return this.request<UserSessionsResponse>("/api/sessions");
+  }
+
   async validateSession(sessionId: string): Promise<ValidationResponse> {
     return this.request<ValidationResponse>(
       `/api/sessions/${sessionId}/validate`,
@@ -139,6 +154,12 @@ class ApiClient {
     return this.request(`/api/sessions/${sessionId}`, {
       method: "DELETE",
     });
+  }
+
+  async getSolution(challengeId: number): Promise<{ solution: string }> {
+    return this.request<{ solution: string }>(
+      `/api/challenges/${challengeId}/solution`,
+    );
   }
 }
 
