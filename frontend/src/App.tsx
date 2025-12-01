@@ -1,9 +1,8 @@
-import './App.css'
-import { Routes, Route } from 'react-router-dom'
-import Home from './pages/Home/Home'
+import "./App.css";
+import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home/Home";
 
 function App() {
-
   return (
     <>
       <Routes>
@@ -11,7 +10,7 @@ function App() {
         <Route path="/about" element={<div>About</div>} />
       </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
