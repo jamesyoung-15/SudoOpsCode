@@ -10,9 +10,31 @@ const router = Router();
 /**
  * GET /api/challenges/public
  * Get all challenges (public, no auth required)
+ * Query params: page (default: 1), limit (default: 20)
  */
 router.get("/public", async (req, res) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
+
+    // Validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        error: "Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100" 
+      });
+    }
+
+    // Get total count
+    const countResult = (await sequelize.query(
+      `SELECT COUNT(*) as total FROM challenges`,
+      { type: QueryTypes.SELECT }
+    )) as Array<{ total: number }>;
+
+    const totalChallenges = countResult[0].total;
+    const totalPages = Math.ceil(totalChallenges / limit);
+
+    // Get paginated challenges
     const challenges = (await sequelize.query(
       `SELECT 
         c.id,
@@ -26,8 +48,10 @@ router.get("/public", async (req, res) => {
       FROM challenges c
       LEFT JOIN solves s ON c.id = s.challenge_id
       GROUP BY c.id
-      ORDER BY c.id`,
+      ORDER BY c.id
+      LIMIT ? OFFSET ?`,
       {
+        replacements: [limit, offset],
         type: QueryTypes.SELECT,
       },
     )) as Array<{
@@ -41,7 +65,17 @@ router.get("/public", async (req, res) => {
       solve_count: number;
     }>;
 
-    res.json({ challenges });
+    res.json({ 
+      challenges,
+      pagination: {
+        page,
+        limit,
+        totalChallenges,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
+    });
   } catch (error) {
     logger.error({ error }, "Failed to fetch public challenges");
     res.status(500).json({ error: "Failed to fetch challenges" });

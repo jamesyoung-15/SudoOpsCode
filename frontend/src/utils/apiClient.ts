@@ -1,3 +1,5 @@
+import type { ChallengesResponse } from "../types/Challenge";
+
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3008";
 
@@ -89,6 +91,11 @@ class ApiClient {
   // Example protected endpoint
   async getChallenges(): Promise<unknown> {
     return this.request("/api/challenges");
+  }
+
+  // list challenges with pagination
+  async getPublicChallenges(page: number = 1, limit: number = 20): Promise<ChallengesResponse> {
+    return this.request(`/api/challenges/public?page=${page}&limit=${limit}`);
   }
 }
 

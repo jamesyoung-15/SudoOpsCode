@@ -6,6 +6,7 @@ import { useAuthStore } from "./store/authStore";
 import { Register } from "./pages/Register/Register";
 import { Login } from "./pages/Login/Login";
 import { GuestRoute } from "./components/GuestRoute";
+import Challenges from "./pages/Challenges/Challenges";
 
 function App() {
   const checkAuth = useAuthStore((state) => state.initializeAuth);
@@ -34,6 +35,7 @@ function App() {
             </GuestRoute>
           }
         />
+        <Route path="/challenges" element={<Challenges />} />
       </Routes>
     </>
   );
