@@ -1,29 +1,29 @@
 variable "aws_region" {
-  type = string
+  type        = string
   description = "Set AWS region"
-  default = "us-east-1"
+  default     = "us-east-1"
 }
 
 variable "aws_profile" {
-  type = string
+  type        = string
   description = "Set AWS CLI profile"
-  default = "default"
+  default     = "default"
 }
 
 variable "cloudflare_api_token" {
-  type = string
+  type        = string
   description = "Cloudflare API token"
 }
 
 variable "site_domain" {
-  type = string
+  type        = string
   description = "Domain name for the site"
-  default = "jyylab.com"
+  default     = "jyylab.com"
 }
 
 variable "site_subdomain" {
-  type = string
+  type        = string
   description = "Subdomain for the website"
-  default = "sudoopscode"
-  
+  default     = "sudoopscode"
+
 }

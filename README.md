@@ -10,15 +10,13 @@ Uses NodeJS + Express in backend w/ Docker containers for terminal environments.
 
 ## Setup
 
-### Local Dev
+Tested on Linux host.
 
-Developed on Linux host (NixOS).
-
-#### Requirements
+### Requirements
 
 Ensure system has Docker and NodeJS installed.
 
-#### Docker Setup
+### Docker Setup
 
 **Important**: First need to build the actual base Docker image that is used for each container. Run:
 
@@ -28,7 +26,9 @@ docker build -f backend/challenges/Dockerfile.challenge -t challenge-runner:v1.0
 
 This is the Docker image used for each container that corresponds to a terminal session. Without it backend will error out.
 
-#### Backend Setup
+### Backend Setup
+
+By default, this starts the Express server on port 3008 (also set in frontend). You can create `.env` and set environment variables listed in `backend/config/index.ts`.
 
 ``` bash
 cd backend
@@ -38,12 +38,19 @@ npm run test
 npm run dev
 ```
 
-#### Frontend Setup
+### Frontend Setup
 
 ``` bash
 cd frontend
 npm install
 npm run dev
+```
+
+By default, the frontend uses localhost:3008 as the API base URL. To change, create `.env` in `frontend` and can change to something like:
+
+``` conf
+VITE_API_BASE_URL=http://localhost:3009
+VITE_WS_BASE_URL=ws://localhost:3009
 ```
 
 ## Tech Stack
@@ -72,4 +79,4 @@ npm run dev
 
 ## Documentation
 
-See `docs` for some more notes about project.
+See [docs](./docs/README.md) for some more notes about project.

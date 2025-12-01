@@ -40,7 +40,8 @@ RUN apk add --update --no-cache \
     net-tools \
     bind-tools \
     sudo \
-    python3
+    python3 \
+    tini
 
 # Create non-root user
 RUN adduser -D -s /bin/bash challenger
@@ -53,6 +54,9 @@ WORKDIR /home/challenger
 
 # Switch to non-root user
 USER challenger
+
+# Important: Use tini as the init system to handle zombie processes
+ENTRYPOINT ["/sbin/tini", "--"]
 
 # Keep container running
 CMD ["sleep", "infinity"]

@@ -65,16 +65,16 @@ resource "aws_s3_bucket_policy" "site_bucket_policy" {
 }
 
 data "cloudflare_zone" "domain" {
-    filter = {
-        name = var.site_domain
-    }
+  filter = {
+    name = var.site_domain
+  }
 }
 
 
 resource "cloudflare_dns_record" "site_cname" {
   zone_id = data.cloudflare_zone.domain.id
   name    = "${var.site_subdomain}.${var.site_domain}"
-  content   = aws_s3_bucket_website_configuration.site_bucket_website_config.website_endpoint
+  content = aws_s3_bucket_website_configuration.site_bucket_website_config.website_endpoint
   type    = "CNAME"
 
   ttl     = 1
