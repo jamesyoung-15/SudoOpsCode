@@ -2,10 +2,13 @@ import { apiClient } from "../../utils/apiClient";
 import "./Challenge.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Terminal from "../../components/Terminal/Terminal";
+import { Modal } from "../../components/Modal/Modal";
 import type { ChallengeUserResponse } from "../../types/Challenge";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const Challenge = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,13 +18,15 @@ const Challenge = () => {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [solutionModal, setSolutionModal] = useState(false);
+  const [solution, setSolution] = useState<string>("");
+  const [loadingSolution, setLoadingSolution] = useState(false);
 
   useEffect(() => {
     if (!id) {
       navigate("/challenges");
       return;
     }
-
     fetchChallenge(parseInt(id));
   }, [id, navigate]);
 
@@ -42,22 +47,34 @@ const Challenge = () => {
   };
 
   const handleChallengeSolved = () => {
-    // Refetch challenge to update solved status and attempts
-    if (id) {
-      fetchChallenge(parseInt(id));
+    if (id) fetchChallenge(parseInt(id));
+  };
+
+  const handleGetSolution = async () => {
+    if (!challenge) return;
+
+    try {
+      setLoadingSolution(true);
+      const response = await apiClient.getSolution(challenge.id);
+      setSolution(response.solution);
+      setSolutionModal(true);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load solution";
+      toast.error(errorMessage);
+    } finally {
+      setLoadingSolution(false);
     }
   };
 
-  const getDifficultyClass = (difficulty: string) => {
-    return `difficulty-${difficulty.toLowerCase()}`;
-  };
+  const getDifficultyClass = (difficulty: string) =>
+    `difficulty-${difficulty.toLowerCase()}`;
 
-  const parseCategories = (categoryString: string): string[] => {
-    return categoryString
+  const parseCategories = (categoryString: string): string[] =>
+    categoryString
       .split(",")
       .map((cat) => cat.trim())
-      .filter((cat) => cat.length > 0);
-  };
+      .filter(Boolean);
 
   if (loading) {
     return (
@@ -88,7 +105,6 @@ const Challenge = () => {
     <>
       <Navbar />
       <div className="challenge-layout">
-        {/* Problem Description Panel */}
         <div className="problem-panel">
           <div className="problem-header">
             <h1 className="problem-title">{`${id}. ${challenge.title}`}</h1>
@@ -123,22 +139,32 @@ const Challenge = () => {
 
           <div className="problem-description">
             <h2>Description</h2>
-            <div className="description-content">{challenge.description}</div>
+            <Markdown remarkPlugins={[remarkGfm]}>
+              {challenge.description}
+            </Markdown>
           </div>
 
-          {!!challenge.solved && challenge.solution && (
-            <div className="problem-solution">
-              <h2>Solution</h2>
-              <div className="solution-content">
-                <pre>{challenge.solution}</pre>
-              </div>
-            </div>
-          )}
+          <div className="problem-actions">
+            <button
+              className="solution-btn"
+              onClick={handleGetSolution}
+              disabled={loadingSolution}
+            >
+              {loadingSolution ? "Loading..." : "View Solution"}
+            </button>
+          </div>
         </div>
 
-        {/* Terminal Panel */}
         <Terminal challengeId={challenge.id} onSolved={handleChallengeSolved} />
       </div>
+
+      <Modal
+        isOpen={solutionModal}
+        onClose={() => setSolutionModal(false)}
+        title="Solution"
+      >
+        <Markdown remarkPlugins={[remarkGfm]}>{solution}</Markdown>
+      </Modal>
     </>
   );
 };

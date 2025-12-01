@@ -33,7 +33,6 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
   const [sessionState, setSessionState] = useState<SessionState>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [solveMessage, setSolveMessage] = useState<string>("");
-  const [solvePoints, setSolvePoints] = useState<number>(0);
 
   // Initialize terminal only when starting a session
   const initializeTerminal = () => {
@@ -120,10 +119,37 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
     }
   };
 
+  const cleanupExistingSessions = async () => {
+    try {
+      const { sessions } = await apiClient.getUserSessions();
+
+      if (sessions.length === 0) {
+        return;
+      }
+
+      // End all existing sessions
+      await Promise.allSettled(
+        sessions.map((session) =>
+          apiClient
+            .endSession(session.sessionId)
+            .catch((err) =>
+              console.error(`Failed to end session ${session.sessionId}:`, err),
+            ),
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to cleanup existing sessions:", error);
+      // Don't throw - we still want to try starting a new session
+    }
+  };
+
   const handleStartChallenge = async () => {
     try {
       setSessionState("starting");
       initializeTerminal();
+
+      // Clean up any existing sessions first
+      await cleanupExistingSessions();
 
       const response = await apiClient.startSession(challengeId);
       setSessionId(response.sessionId);
@@ -199,7 +225,6 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
 
       ws.onclose = () => {
         if (isSolvingRef.current) {
-          console.log("WebSocket closed during solve process - ignoring");
           return;
         }
 
@@ -225,16 +250,12 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
 
       if (response.success) {
         setSolveMessage(response.message);
-        setSolvePoints(response.points || 0);
         setSessionState("solved");
 
         // Show success toast
-        toast.success(
-          `${response.message}${response.points ? ` +${response.points} points!` : ""}`,
-          {
-            autoClose: 5000,
-          },
-        );
+        toast.success(`${response.message}`, {
+          autoClose: 5000,
+        });
 
         cleanup();
 
@@ -261,7 +282,6 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
       setSessionState("ending");
 
       await apiClient.endSession(sessionId);
-      toast.info("Session ended");
 
       if (xtermRef.current) {
         xtermRef.current.clear();
@@ -306,22 +326,6 @@ const Terminal = ({ challengeId, onSolved }: TerminalProps) => {
         <div className="terminal-content">
           <div className="success-overlay">
             <div className="success-content">
-              <div className="success-icon">
-                {/* Big checkmark logo */}
-                <svg
-                  width="80"
-                  height="80"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-              </div>
               <h2 className="success-title">Challenge Complete!</h2>
               <p className="success-message">{solveMessage}</p>
               <button className="success-btn" onClick={handleBackToChallenges}>

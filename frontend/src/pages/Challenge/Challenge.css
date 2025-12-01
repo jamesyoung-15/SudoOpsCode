@@ -205,6 +205,35 @@
   box-shadow: 0 4px 12px rgba(255, 183, 0, 0.3);
 }
 
+.problem-actions {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.solution-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--yellow-color);
+  color: var(--primary-color);
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.solution-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 183, 0, 0.3);
+}
+
+.solution-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Tablet breakpoint (768px+) - Side by side split */
 @media (min-width: 768px) {
   .challenge-layout {
@@ -219,6 +248,17 @@
 
   .problem-title {
     font-size: 2rem;
+  }
+
+  .problem-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .solution-btn {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
   }
 }
 
