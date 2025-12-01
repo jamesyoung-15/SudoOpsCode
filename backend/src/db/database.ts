@@ -125,6 +125,26 @@ export const initializeDatabase = async () => {
     `CREATE INDEX IF NOT EXISTS idx_solves_solved_at ON solves(solved_at)`,
   );
 
+  // Create user favorite questions table
+  await sequelize.query(`
+    CREATE TABLE IF NOT EXISTS favorites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      challenge_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, challenge_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
+    )
+  `);
+
+  await sequelize.query(
+    `CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id)`,
+  );
+  await sequelize.query(
+    `CREATE INDEX IF NOT EXISTS idx_favorites_challenge_id ON favorites(challenge_id)`,
+  );
+
   logger.info("Database schema initialized");
 };
 

@@ -9,8 +9,10 @@ import { GuestRoute } from "./components/GuestRoute";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Challenges from "./pages/Challenges/Challenges";
 import Challenge from "./pages/Challenge/Challenge";
+import Favorites from "./pages/Favorites/Favorites";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Navigate } from "react-router-dom";
 
 function App() {
   const checkAuth = useAuthStore((state) => state.initializeAuth);
@@ -60,6 +62,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute>
+              <Favorites />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
