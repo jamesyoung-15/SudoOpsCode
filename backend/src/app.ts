@@ -9,6 +9,7 @@ import sessionRoutes from "./routes/sessions.js";
 import challengeRoutes from "./routes/challenges.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
+import favoriteRoutes from "./routes/favorites.js";
 import { WebSocketService } from "./services/websocketService.js";
 import { sessionManager } from "./services/sessionManager.js";
 import { containerManager } from "./services/containerManager.js";
@@ -42,6 +43,7 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/favorites", favoriteRoutes);
 
 app.get("/", (req, res) => {
   res.json({ status: "ok" });
