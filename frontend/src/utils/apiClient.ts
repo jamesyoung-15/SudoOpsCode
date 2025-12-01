@@ -6,6 +6,9 @@ import type {
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3008";
 
+export const WS_BASE_URL =
+  import.meta.env.VITE_WS_BASE_URL || "ws://localhost:3008";
+
 interface RegisterCredentials {
   username: string;
   password: string;
@@ -22,6 +25,18 @@ interface AuthResponse {
     userId: number;
     username: string;
   };
+}
+
+interface SessionResponse {
+  sessionId: string;
+  expiresAt: string;
+  message?: string;
+}
+
+interface ValidationResponse {
+  success: boolean;
+  message: string;
+  points?: number;
 }
 
 class ApiClient {
@@ -60,8 +75,6 @@ class ApiClient {
         .json()
         .catch(() => ({ message: "Request failed" }));
 
-      // Only redirect to login on 401 if NOT on auth endpoints
-      // (login/register failures should show error, not redirect)
       const isAuthEndpoint =
         endpoint.includes("/api/auth/login") ||
         endpoint.includes("/api/auth/register");
@@ -93,17 +106,39 @@ class ApiClient {
     });
   }
 
-  // Get individual challenge (protected)
+  // Challenge methods
   async getChallenge(id: number): Promise<ChallengeDetailResponse> {
     return this.request(`/api/challenges/${id}`);
   }
 
-  // list challenges with pagination
   async getPublicChallenges(
     page: number = 1,
     limit: number = 20,
   ): Promise<ChallengesResponse> {
     return this.request(`/api/challenges/public?page=${page}&limit=${limit}`);
+  }
+
+  // Session methods
+  async startSession(challengeId: number): Promise<SessionResponse> {
+    return this.request<SessionResponse>("/api/sessions/start", {
+      method: "POST",
+      body: JSON.stringify({ challengeId }),
+    });
+  }
+
+  async validateSession(sessionId: string): Promise<ValidationResponse> {
+    return this.request<ValidationResponse>(
+      `/api/sessions/${sessionId}/validate`,
+      {
+        method: "POST",
+      },
+    );
+  }
+
+  async endSession(sessionId: string): Promise<{ message: string }> {
+    return this.request(`/api/sessions/${sessionId}`, {
+      method: "DELETE",
+    });
   }
 }
 
