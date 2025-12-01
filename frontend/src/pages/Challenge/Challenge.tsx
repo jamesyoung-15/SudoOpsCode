@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { FavoriteButton } from "../../components/FavoriteButton/FavoriteButton";
 
 const Challenge = () => {
   const { id } = useParams<{ id: string }>();
@@ -143,6 +144,8 @@ const Challenge = () => {
               {challenge.description}
             </Markdown>
           </div>
+
+          <FavoriteButton challengeId={challenge.id} />
 
           <div className="problem-actions">
             <button

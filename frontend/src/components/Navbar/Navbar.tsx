@@ -34,6 +34,11 @@ const Navbar = () => {
           <Link to="/challenges" className="navbar-link">
             Challenges
           </Link>
+          {isAuthenticated && (
+            <Link to="/favorites" className="navbar-link">
+              Favorites
+            </Link>
+          )}
         </nav>
       </div>
       <div className="navbar-right">
@@ -78,6 +83,9 @@ const Navbar = () => {
           </Link>
           <Link to="/challenges" className="navbar-link" onClick={toggleMenu}>
             Challenges
+          </Link>
+          <Link to="/favorites" className="navbar-link" onClick={toggleMenu}>
+            Favorites
           </Link>
           {isAuthenticated ? (
             <>

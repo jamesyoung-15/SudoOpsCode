@@ -49,6 +49,29 @@ interface UserSessionsResponse {
     lastActivity: string;
   }>;
 }
+interface FavoriteChallenge {
+  id: number;
+  title: string;
+  difficulty: string;
+  points: number;
+  category: string;
+  favorited_at: string;
+  solved: boolean;
+}
+
+interface FavoritesPaginationInfo {
+  page: number;
+  limit: number;
+  totalFavorites: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+interface FavoritesResponse {
+  favorites: FavoriteChallenge[];
+  pagination: FavoritesPaginationInfo;
+}
 
 class ApiClient {
   private baseUrl: string;
@@ -159,6 +182,34 @@ class ApiClient {
   async getSolution(challengeId: number): Promise<{ solution: string }> {
     return this.request<{ solution: string }>(
       `/api/challenges/${challengeId}/solution`,
+    );
+  }
+
+  // Favorites methods
+  async getFavorites(
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<FavoritesResponse> {
+    return this.request<FavoritesResponse>(
+      `/api/favorites?page=${page}&limit=${limit}`,
+    );
+  }
+
+  async addFavorite(challengeId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/favorites/${challengeId}`, {
+      method: "POST",
+    });
+  }
+
+  async removeFavorite(challengeId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/favorites/${challengeId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async checkFavorite(challengeId: number): Promise<{ isFavorite: boolean }> {
+    return this.request<{ isFavorite: boolean }>(
+      `/api/favorites/check/${challengeId}`,
     );
   }
 }
