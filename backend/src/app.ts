@@ -68,7 +68,7 @@ app.get("/health", (req, res) => {
 const startServer = async () => {
   try {
     // Initialize database
-    initializeDatabase();
+    await initializeDatabase();
 
     // Load challenges
     await challengeLoader.loadChallenges();

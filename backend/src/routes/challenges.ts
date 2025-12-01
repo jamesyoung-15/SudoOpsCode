@@ -20,15 +20,16 @@ router.get("/public", async (req, res) => {
 
     // Validate pagination parameters
     if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({ 
-        error: "Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100" 
+      return res.status(400).json({
+        error:
+          "Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100",
       });
     }
 
     // Get total count
     const countResult = (await sequelize.query(
       `SELECT COUNT(*) as total FROM challenges`,
-      { type: QueryTypes.SELECT }
+      { type: QueryTypes.SELECT },
     )) as Array<{ total: number }>;
 
     const totalChallenges = countResult[0].total;
@@ -65,7 +66,7 @@ router.get("/public", async (req, res) => {
       solve_count: number;
     }>;
 
-    res.json({ 
+    res.json({
       challenges,
       pagination: {
         page,
@@ -73,8 +74,8 @@ router.get("/public", async (req, res) => {
         totalChallenges,
         totalPages,
         hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      }
+        hasPreviousPage: page > 1,
+      },
     });
   } catch (error) {
     logger.error({ error }, "Failed to fetch public challenges");
