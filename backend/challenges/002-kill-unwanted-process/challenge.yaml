@@ -1,5 +1,5 @@
-id: kill-process
-title: Kill the Process
+id: kill-unwanted-process
+title: Kill the Unwanted Process
 description: |
   There is a Python script named `unwanted_process` running in the background. Your task is to identify and terminate this process using appropriate Linux commands.
 difficulty: easy
