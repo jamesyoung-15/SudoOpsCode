@@ -1,0 +1,28 @@
+id: kill-nice-value-process
+title: Kill the Process with a Nice Value
+description: |
+  Two Python processes are running with different nice values.  
+  One of them has a nice value of **10**.  
+  Your task is to locate and terminate only the process with that nice value.
+difficulty: medium
+points: 20
+category: "linux, process-management"
+solution: |
+  1. List processes and show their niceness:
+      ```bash
+      ps -eo pid,ni,comm
+      ```
+
+      or add `grep 10` and find the second column showing `10`:
+
+      ```bash
+      ps -eo pid,ni,comm | grep " 10 "
+      ```
+
+  2. Identify the one with NI=10.
+  3. Kill it using:
+      ```bash
+      kill <PID>
+      ```
+  4. Ensure the other process is still running.
+order: 5
