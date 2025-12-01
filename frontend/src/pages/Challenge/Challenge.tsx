@@ -1,6 +1,7 @@
 import { apiClient } from "../../utils/apiClient";
 import "./Challenge.css";
 import Navbar from "../../components/Navbar/Navbar";
+import Terminal from "../../components/Terminal/Terminal";
 import type { ChallengeUserResponse } from "../../types/Challenge";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -37,6 +38,13 @@ const Challenge = () => {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChallengeSolved = () => {
+    // Refetch challenge to update solved status and attempts
+    if (id) {
+      fetchChallenge(parseInt(id));
     }
   };
 
@@ -104,7 +112,7 @@ const Challenge = () => {
               <span
                 className={`stat-value ${challenge.solved ? "solved" : "unsolved"}`}
               >
-                {challenge.solved ? "✓ Solved" : "Unsolved"}
+                {challenge.solved ? "Solved" : "Unsolved"}
               </span>
             </div>
             <div className="stat-item">
@@ -118,7 +126,7 @@ const Challenge = () => {
             <div className="description-content">{challenge.description}</div>
           </div>
 
-          {challenge.solved && challenge.solution && (
+          {!!challenge.solved && challenge.solution && (
             <div className="problem-solution">
               <h2>Solution</h2>
               <div className="solution-content">
@@ -128,16 +136,8 @@ const Challenge = () => {
           )}
         </div>
 
-        {/* Solution/Terminal Panel */}
-        <div className="solution-panel">
-          <div className="solution-header">
-            <h2>Terminal</h2>
-          </div>
-          <div className="terminal-placeholder">
-            <div className="terminal-line">$ ssh ctf@challenge-server</div>
-            <div className="terminal-line terminal-cursor">_</div>
-          </div>
-        </div>
+        {/* Terminal Panel */}
+        <Terminal challengeId={challenge.id} onSolved={handleChallengeSolved} />
       </div>
     </>
   );

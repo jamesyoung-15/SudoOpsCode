@@ -4,20 +4,35 @@ import { Link } from "react-router-dom";
 import { VscTerminalBash } from "react-icons/vsc";
 import { FaServer, FaDocker } from "react-icons/fa";
 import Footer from "../../components/Footer/Footer";
+import { useAuthStore } from "../../store/authStore";
+import { toast } from "react-toastify";
 
 const Home = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const handleSignUpClick = (e: React.MouseEvent) => {
+    if (isAuthenticated) {
+      e.preventDefault();
+      toast.info("You're already logged in!");
+    }
+  };
+
   return (
     <>
       <Navbar />
       <div className="homepage container">
         <div className="homepage-intro">
-          <h1 className="hero-title">Master Linux & SysAdmin Skills</h1>
+          <h1 className="hero-title">Learn Linux & SysAdmin Skills</h1>
           <p className="hero-subtitle">
-            Practice real-world system administration challenges in an
-            interactive terminal environment.
+            Free and open source platform to practice system administration
+            challenges in an interactive terminal environment.
           </p>
           <div className="cta-buttons">
-            <Link to="/register" className="btn btn-primary">
+            <Link
+              to="/register"
+              className="btn btn-primary"
+              onClick={handleSignUpClick}
+            >
               Sign Up for Free
             </Link>
             <Link to="/challenges" className="btn btn-secondary">
@@ -49,7 +64,7 @@ const Home = () => {
         <div className="stats-section">
           <div className="stat">
             <h2>10+</h2>
-            <p>Challenges</p>
+            <p>Free Challenges</p>
           </div>
           <div className="stat">
             <h2>2+</h2>
