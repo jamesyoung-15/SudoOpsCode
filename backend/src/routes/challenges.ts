@@ -180,7 +180,7 @@ router.get(
 
 /**
  * GET /api/challenges/:id/solution
- * Get challenge solution (only if solved)
+ * Get challenge solution
  */
 router.get(
   "/:id/solution",
@@ -192,21 +192,6 @@ router.get(
 
       if (isNaN(challengeId)) {
         return res.status(400).json({ error: "Invalid challenge ID" });
-      }
-
-      // Check if user has solved the challenge
-      const solve = await sequelize.query(
-        "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.SELECT,
-        },
-      );
-
-      if (solve.length === 0) {
-        return res
-          .status(403)
-          .json({ error: "You must solve the challenge first" });
       }
 
       // Get the solution
