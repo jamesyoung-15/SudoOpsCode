@@ -87,8 +87,10 @@ Full instructions on free [setup](./docs/application_deployment.md)
 - Terraform for frontend (S3 + Cloudflare)
 - Oracle Instance for backend (manual setup)
 
-## Architecture
+## Hosting Diagram
 
-## Documentation
+![](./media/hosting-diagram.png)
+
+## More Documentation
 
 See [docs](./docs/README.md) for some more notes about project.
