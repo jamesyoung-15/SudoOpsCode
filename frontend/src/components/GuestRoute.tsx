@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+import { Navigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 interface GuestRouteProps {
   children: React.ReactNode;

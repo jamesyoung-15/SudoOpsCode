@@ -1,4 +1,5 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3008";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3008";
 
 interface RegisterCredentials {
   username: string;
@@ -26,22 +27,22 @@ class ApiClient {
   }
 
   private getAuthToken(): string | null {
-    return sessionStorage.getItem('auth_token');
+    return sessionStorage.getItem("auth_token");
   }
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const token = this.getAuthToken();
-    
+
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -52,12 +53,14 @@ class ApiClient {
     if (!response.ok) {
       // Handle 401 Unauthorized - token expired or invalid
       if (response.status === 401) {
-        sessionStorage.removeItem('auth_token');
-        sessionStorage.removeItem('auth_user');
-        window.location.href = '/login';
+        sessionStorage.removeItem("auth_token");
+        sessionStorage.removeItem("auth_user");
+        window.location.href = "/login";
       }
-      
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Request failed" }));
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
@@ -66,22 +69,22 @@ class ApiClient {
 
   // Auth methods
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/register', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/auth/register", {
+      method: "POST",
       body: JSON.stringify(credentials),
     });
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/login', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/auth/login", {
+      method: "POST",
       body: JSON.stringify(credentials),
     });
   }
 
   // Example protected endpoint
   async getChallenges(): Promise<unknown> {
-    return this.request('/api/challenges');
+    return this.request("/api/challenges");
   }
 }
 

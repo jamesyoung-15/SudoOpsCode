@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface User {
   userId: number;
@@ -9,15 +9,15 @@ interface AuthState {
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
-  
+
   // Actions
   setAuth: (token: string, user: User) => void;
   logout: () => void;
   initializeAuth: () => void;
 }
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
+const TOKEN_KEY = "auth_token";
+const USER_KEY = "auth_user";
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
@@ -39,7 +39,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   initializeAuth: () => {
     const token = sessionStorage.getItem(TOKEN_KEY);
     const userStr = sessionStorage.getItem(USER_KEY);
-    
+
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);
