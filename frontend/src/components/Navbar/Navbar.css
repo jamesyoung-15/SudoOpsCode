@@ -1,83 +1,165 @@
-.navbar-container{
-    width: 100%;
-    height: 3.5rem;
-    background-color: var(--secondary-color);
-    border-bottom: 1px solid #333;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1rem;
-    position: relative;
+.navbar-container {
+  width: 100%;
+  height: 3.5rem;
+  background-color: var(--secondary-color);
+  border-bottom: 1px solid #333;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  position: relative;
 }
 
-.navbar-left, .navbar-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+.navbar-left,
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.navbar-logo{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.terminal-icon{
-    width: 1.5rem;
-    height: 1.5rem;
-    color: #ffb700;
+.terminal-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #ffb700;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .navbar-auth {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-link {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.3s;
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+.navbar-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-username {
+  color: #4caf50;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logout {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+  color: var(--text-color);
+}
+
+.navbar-logout:hover {
+  background-color: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+}
+
+.navbar-signup {
+  background-color: #4caf50;
+  color: white;
+}
+
+.navbar-signup:hover {
+  background-color: #45a049;
 }
 
 .hamburger-menu {
-    display: none;
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    padding: 0.5rem;
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem;
 }
 
 .mobile-menu {
-    display: none;
+  display: none;
 }
 
 @media (max-width: 768px) {
-    .logo-text {
-        display: none;
-    }
+  .logo-text {
+    display: none;
+  }
 
-    .navbar-right {
-        display: none;
-    }
+  .navbar-links {
+    display: none;
+  }
 
-    .hamburger-menu {
-        display: block;
-    }
+  .navbar-right {
+    display: none;
+  }
 
-    .mobile-menu {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background-color: var(--secondary-color);
-        border: 1px solid #333;
-        border-top: none;
-        padding: 1rem;
-        gap: 1rem;
-        min-width: 100vw;
-        z-index: 1000;
-    }
+  .hamburger-menu {
+    display: block;
+  }
 
-    .mobile-menu .navbar-link {
-        padding: 0.5rem;
-    }
+  .mobile-menu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--secondary-color);
+    border: 1px solid #333;
+    /* border-top: none; */
+    padding: 0.5rem 0;
+    min-width: 100vw;
+    z-index: 1000;
+  }
+
+  .mobile-menu .navbar-link {
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+  }
+
+  .mobile-menu .navbar-username {
+    padding: 0.75rem 1rem;
+  }
+
+  .mobile-menu .navbar-logout {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+  }
+
+  .mobile-menu .navbar-logout:hover {
+    background-color: rgba(255, 68, 68, 0.1);
+  }
+
+  .mobile-menu .navbar-signup {
+    background-color: transparent;
+  }
+
+  .mobile-menu .navbar-signup:hover {
+    background-color: transparent;
+  }
 }

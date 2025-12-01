@@ -12,13 +12,14 @@
   --text-color: #f5f5f5;
   --text-highlight-color: #ffb700;
   --yellow-color: #ffb700;
-  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
   font-family: var(--font-family);
   background-color: var(--primary-color);
   color: var(--text-color);
+  min-height: 100vh;
 }
 
 /* Links inherit color + remove underline */
