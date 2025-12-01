@@ -24,7 +24,7 @@ Ensure system has Docker and NodeJS installed.
 docker build -f backend/challenges/Dockerfile.challenge -t challenge-runner:v1.0 .
 ```
 
-This is the Docker image used for each container that corresponds to a terminal session. Without it backend will error out.
+This is the Docker image used for each container that corresponds to a terminal session. Without it backend may error out.
 
 ### Backend Setup
 
@@ -33,9 +33,10 @@ By default, this starts the Express server on port 3008 (also set in frontend). 
 ``` bash
 cd backend
 npm run build
+npm run dev
+
 # for running unit tests
 npm run test
-npm run dev
 ```
 
 ### Frontend Setup
@@ -52,6 +53,12 @@ By default, the frontend uses localhost:3008 as the API base URL. To change, cre
 VITE_API_BASE_URL=http://localhost:3009
 VITE_WS_BASE_URL=ws://localhost:3009
 ```
+
+## Non-local Deployment
+
+For non-local deployment, I used Cloudflare as my DNS provider and CDN, AWS S3 to host frontend, Oracle Instance to host backend (API + database). Basically use Terraform to create public S3 bucket w/ Cloudflare domain pointing to bucket (cname), sync static frontend files to bucket, backend do manual deploy (could automate w/ Terraform + bash, possible todo).
+
+Full instructions on free [setup](./docs/application_deployment.md)
 
 ## Tech Stack
 
@@ -74,6 +81,11 @@ VITE_WS_BASE_URL=ws://localhost:3009
 - JWT for auth
 - Dockerode for interfacing Docker API w/ Node
 - Websocket for connecting to terminal session live
+
+### "Prod" Deployment
+
+- Terraform for frontend (S3 + Cloudflare)
+- Oracle Instance for backend (manual setup)
 
 ## Architecture
 
