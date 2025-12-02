@@ -12,9 +12,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "node dist/app.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "start": "NODE_ENV=production node dist/app.js"
+    "dev": "LOG_LEVEL=debug node dist/app.js",
+    "test": "LOG_LEVEL=silent node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "start": "LOG_LEVEL=info node dist/app.js"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
