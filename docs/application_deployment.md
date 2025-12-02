@@ -29,7 +29,7 @@ Next, build the frontend, sync it to the S3 bucket.
 ``` bash
 cd frontend
 npm run build
-aws s3 cp dist/ s3://<BUCKET_NAME>/ --recursive --profile default
+aws s3 sync dist/ s3://<BUCKET_NAME>/ --delete --profile default
 ```
 
 ## Backend Setup

@@ -4,6 +4,8 @@
 
 The backend is a Node.js + Express + TypeScript application that manages challenge sessions, Docker containers, and user progress. It uses SQLite for data persistence and Docker for providing isolated Linux environments for each challenge session.
 
+![](../media/backend-overview.png)
+
 ## Key Parts
 
 ### 1. Session & Container Management Workflow

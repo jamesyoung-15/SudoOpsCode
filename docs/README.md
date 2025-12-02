@@ -8,3 +8,4 @@ Own notes/documentation for the project.
 - [Key API Endpoints](./api.md)
 - [Database Doc](./db.md)
 - [Problems Encountered Doc](./problems_encountered.md)
+- [Hosted Application Deployment Instructions](./application_deployment.md)
