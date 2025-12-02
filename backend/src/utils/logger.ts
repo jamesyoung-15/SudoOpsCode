@@ -1,5 +1,5 @@
 import pino from "pino";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 import dotenv from "dotenv";
 
@@ -13,7 +13,7 @@ const logFilePath = process.env.LOG_FILE_PATH || "./logs/app.log";
 // ensure directory exists when logging to file
 if (logToFile) {
   try {
-    fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
+    await fs.mkdir(path.dirname(logFilePath), { recursive: true });
   } catch (err) {
     // ignore mkdir errors; pino will throw if it cannot write
     // console.error(`Failed to create log directory: ${err}`);

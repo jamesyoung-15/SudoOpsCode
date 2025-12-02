@@ -1,4 +1,5 @@
-import fs from "fs";
+import fs from "fs/promises";
+import { constants } from "fs";
 import path from "path";
 import yaml from "yaml";
 import { sequelize } from "../db/database.js";
@@ -24,13 +25,17 @@ export class ChallengeLoader {
   async loadChallenges(): Promise<void> {
     logger.info({ dir: this.challenges_dir }, "Loading challenges...");
 
-    if (!fs.existsSync(this.challenges_dir)) {
-      logger.warn("Challenges directory does not exist, creating...");
-      fs.mkdirSync(this.challenges_dir, { recursive: true });
-      return;
+    try {
+      await fs.access(this.challenges_dir);
+    } catch {
+      await fs.mkdir(this.challenges_dir, { recursive: true });
+      logger.warn(
+        { dir: this.challenges_dir },
+        "Challenges directory did not exist, created it.",
+      );
     }
 
-    const entries = fs.readdirSync(this.challenges_dir, {
+    const entries = await fs.readdir(this.challenges_dir, {
       withFileTypes: true,
     });
     const challengeDirs = entries
@@ -67,7 +72,7 @@ export class ChallengeLoader {
     this.validateChallengeDirectory(challengePath, dirName);
 
     // Parse challenge.yaml
-    const metadata = this.parseChallengeMetadata(challengePath, dirName);
+    const metadata = await this.parseChallengeMetadata(challengePath, dirName);
 
     // Validate metadata
     this.validateMetadata(metadata, dirName);
@@ -84,20 +89,22 @@ export class ChallengeLoader {
   /**
    * Validate challenge directory structure
    */
-  private validateChallengeDirectory(
+  private async validateChallengeDirectory(
     challengePath: string,
     dirName: string,
-  ): void {
+  ): Promise<void> {
     for (const file of this.REQUIRED_FILES) {
       const filePath = path.join(challengePath, file);
 
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`Missing required file: ${file} in ${dirName}`);
+      try {
+        await fs.access(filePath, constants.F_OK);
+      } catch {
+        throw new Error(`Missing required file: ${dirName}/${file}`);
       }
 
       // Check if validate.sh is executable (on Unix systems)
       if (file === "validate.sh" && process.platform !== "win32") {
-        const stats = fs.statSync(filePath);
+        const stats = await fs.stat(filePath);
         const isExecutable = (stats.mode & fs.constants.S_IXUSR) !== 0;
 
         if (!isExecutable) {
@@ -105,36 +112,42 @@ export class ChallengeLoader {
             { directory: dirName },
             "validate.sh is not executable, fixing...",
           );
-          fs.chmodSync(filePath, "755");
+          await fs.chmod(filePath, "755");
         }
       }
     }
 
     // Check for optional setup.sh
     const setupPath = path.join(challengePath, "setup.sh");
-    if (fs.existsSync(setupPath) && process.platform !== "win32") {
-      const stats = fs.statSync(setupPath);
-      const isExecutable = (stats.mode & fs.constants.S_IXUSR) !== 0;
+    try {
+      await fs.access(setupPath, constants.F_OK);
 
-      if (!isExecutable) {
-        logger.warn(
-          { directory: dirName },
-          "setup.sh is not executable, fixing...",
-        );
-        fs.chmodSync(setupPath, "755");
+      if (process.platform !== "win32") {
+        const stats = await fs.stat(setupPath);
+        const isExecutable = (stats.mode & constants.S_IXUSR) !== 0;
+
+        if (!isExecutable) {
+          logger.warn(
+            { directory: dirName },
+            "setup.sh is not executable, fixing...",
+          );
+          await fs.chmod(setupPath, "755");
+        }
       }
+    } catch {
+      // setup.sh doesn't exist, skip
     }
   }
 
   /**
    * Parse challenge.yaml file
    */
-  private parseChallengeMetadata(
+  private async parseChallengeMetadata(
     challengePath: string,
     dirName: string,
-  ): ChallengeMetadata {
+  ): Promise<ChallengeMetadata> {
     const yamlPath = path.join(challengePath, "challenge.yaml");
-    const yamlContent = fs.readFileSync(yamlPath, "utf-8");
+    const yamlContent = await fs.readFile(yamlPath, "utf-8");
 
     try {
       const metadata = yaml.parse(yamlContent) as ChallengeMetadata;

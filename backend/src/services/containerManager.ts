@@ -1,6 +1,7 @@
 import Docker from "dockerode";
+import fs from "fs/promises";
 import { logger } from "../utils/logger.js";
-import fs from "fs";
+import { constants } from "fs";
 import path from "path";
 import { config } from "../config/index.js";
 import tar from "tar-stream";
@@ -91,7 +92,9 @@ CMD ["sleep", "infinity"]
     const challengeDir = await this.getChallengeDir(challengeId);
     const absoluteChallengeDir = path.resolve(challengeDir);
 
-    if (!fs.existsSync(absoluteChallengeDir)) {
+    try {
+      await fs.access(absoluteChallengeDir, constants.F_OK);
+    } catch {
       throw new Error(`Challenge directory not found: ${absoluteChallengeDir}`);
     }
 
@@ -131,7 +134,8 @@ CMD ["sleep", "infinity"]
 
     // Run setup script if it exists
     const setupScript = path.join(absoluteChallengeDir, "setup.sh");
-    if (fs.existsSync(setupScript)) {
+    try {
+      await fs.access(setupScript, constants.F_OK);
       logger.debug(
         { containerId: container.id, challengeId },
         "Running setup script",
@@ -144,6 +148,8 @@ CMD ["sleep", "infinity"]
       });
 
       await exec.start({});
+    } catch {
+      // Setup script doesn't exist, skip
     }
 
     logger.info(
@@ -186,7 +192,9 @@ CMD ["sleep", "infinity"]
     const challengeDir = await this.getChallengeDir(challengeId);
     const validateScript = path.join(challengeDir, "validate.sh");
 
-    if (!fs.existsSync(validateScript)) {
+    try {
+      await fs.access(validateScript, constants.F_OK);
+    } catch {
       throw new Error(
         `Validation script not found for challenge ${challengeId}`,
       );

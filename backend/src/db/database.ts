@@ -1,15 +1,13 @@
 import { Sequelize } from "sequelize";
 import { logger } from "../utils/logger.js";
 import path from "path";
-import fs from "fs";
+import fs from "fs/promises";
 
 const dbPath = process.env.DB_PATH || "./data/database.sqlite";
 
 // Ensure db directory exists
 const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
+await fs.mkdir(dbDir, { recursive: true });
 
 export const sequelize = new Sequelize({
   dialect: "sqlite",
