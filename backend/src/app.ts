@@ -22,7 +22,7 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.EXPRESS_PORT || 3000;
+const PORT = process.env.EXPRESS_PORT || 3008;
 const server = createServer.createServer(app);
 
 let webSocketService: WebSocketService;
@@ -30,7 +30,28 @@ let webSocketService: WebSocketService;
 // Middleware
 app.use(express.json());
 app.use(pinoHttp({ logger }));
-app.use(cors());
+
+const allowedOrigins = [
+  `http://localhost:5173`, // Vite default
+  `http://localhost:3008`, // Express default
+   process.env.HOSTED_FRONTEND_URL || "", // Hosted frontend
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // for allow cookies/authentication
+  }),
+);
 
 // Static files
 const __filename = fileURLToPath(import.meta.url);
