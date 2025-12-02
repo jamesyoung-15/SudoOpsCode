@@ -69,7 +69,7 @@ export class ChallengeLoader {
     const challengePath = path.join(this.challenges_dir, dirName);
 
     // Validate directory structure
-    this.validateChallengeDirectory(challengePath, dirName);
+    await this.validateChallengeDirectory(challengePath, dirName);
 
     // Parse challenge.yaml
     const metadata = await this.parseChallengeMetadata(challengePath, dirName);

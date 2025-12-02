@@ -16,26 +16,35 @@ import {
 } from "./setup.js";
 
 // Create mock functions BEFORE any mocks
-const mockExistsSync = jest.fn<any>();
-const mockMkdirSync = jest.fn<any>();
-const mockReaddirSync = jest.fn<any>();
-const mockStatSync = jest.fn<any>();
-const mockReadFileSync = jest.fn<any>();
-const mockChmodSync = jest.fn<any>();
+const mockAccess = jest.fn<any>();
+const mockMkdir = jest.fn<any>();
+const mockReaddir = jest.fn<any>();
+const mockStat = jest.fn<any>();
+const mockReadFile = jest.fn<any>();
+const mockChmod = jest.fn<any>();
 const mockParse = jest.fn<any>();
 
-// Mock modules BEFORE importing the service
-jest.unstable_mockModule("fs", () => ({
+// Mock fs/promises module
+jest.unstable_mockModule("fs/promises", () => ({
   default: {
-    existsSync: mockExistsSync,
-    mkdirSync: mockMkdirSync,
-    readdirSync: mockReaddirSync,
-    statSync: mockStatSync,
-    readFileSync: mockReadFileSync,
-    chmodSync: mockChmodSync,
+    access: mockAccess,
+    mkdir: mockMkdir,
+    readdir: mockReaddir,
+    stat: mockStat,
+    readFile: mockReadFile,
+    chmod: mockChmod,
     constants: {
+      F_OK: 0,
       S_IXUSR: 0o100,
     },
+  },
+}));
+
+// Mock fs constants (these are still from the regular fs module)
+jest.unstable_mockModule("fs", () => ({
+  constants: {
+    F_OK: 0,
+    S_IXUSR: 0o100,
   },
 }));
 
@@ -62,6 +71,16 @@ describe("ChallengeLoader", () => {
   beforeEach(async () => {
     await cleanTestDatabase();
     jest.clearAllMocks();
+
+    // Reset all mock implementations to prevent test pollution
+    mockAccess.mockReset();
+    mockMkdir.mockReset();
+    mockReaddir.mockReset();
+    mockStat.mockReset();
+    mockReadFile.mockReset();
+    mockChmod.mockReset();
+    mockParse.mockReset();
+
     challengeLoader = new ChallengeLoader(
       testSequelize,
       "/fake/test/challenges",
@@ -74,44 +93,45 @@ describe("ChallengeLoader", () => {
 
   describe("loadChallenges", () => {
     it("should create challenges directory if it does not exist", async () => {
-      mockExistsSync.mockReturnValue(false);
-      mockMkdirSync.mockReturnValue(undefined);
+      mockAccess.mockRejectedValueOnce(new Error("ENOENT")); // Directory doesn't exist
+      mockMkdir.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([]); // Empty directory after creation
 
       await challengeLoader.loadChallenges();
 
-      expect(mockMkdirSync).toHaveBeenCalledWith("/fake/test/challenges", {
+      expect(mockMkdir).toHaveBeenCalledWith("/fake/test/challenges", {
         recursive: true,
       });
     });
 
     it("should load all valid challenge directories", async () => {
       // Mock directory exists
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenges dir exists
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenges dir exists
         // Challenge 1 validation
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(true) // validate.sh exists
-        .mockReturnValueOnce(false) // setup.sh doesn't exist
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockResolvedValueOnce(undefined) // validate.sh exists
+        .mockRejectedValueOnce(new Error("ENOENT")) // setup.sh doesn't exist
         // Challenge 2 validation
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(true) // validate.sh exists
-        .mockReturnValueOnce(false); // setup.sh doesn't exist
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockResolvedValueOnce(undefined) // validate.sh exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // setup.sh doesn't exist
 
-      mockReaddirSync.mockReturnValue([
+      mockReaddir.mockResolvedValue([
         { name: "challenge1", isDirectory: () => true },
         { name: "challenge2", isDirectory: () => true },
         { name: "file.txt", isDirectory: () => false },
       ]);
 
       // Mock stat checks for validate.sh (check if executable)
-      mockStatSync
-        .mockReturnValueOnce({ mode: 0o755 }) // challenge1 validate.sh executable
-        .mockReturnValueOnce({ mode: 0o755 }); // challenge2 validate.sh executable
+      mockStat
+        .mockResolvedValueOnce({ mode: 0o755 }) // challenge1 validate.sh executable
+        .mockResolvedValueOnce({ mode: 0o755 }); // challenge2 validate.sh executable
 
       // Mock YAML reading
-      mockReadFileSync
-        .mockReturnValueOnce("yaml content 1")
-        .mockReturnValueOnce("yaml content 2");
+      mockReadFile
+        .mockResolvedValueOnce("yaml content 1")
+        .mockResolvedValueOnce("yaml content 2");
 
       mockParse
         .mockReturnValueOnce({
@@ -163,18 +183,18 @@ describe("ChallengeLoader", () => {
         },
       );
 
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenges dir exists
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(true) // validate.sh exists
-        .mockReturnValueOnce(false); // setup.sh doesn't exist
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenges dir exists
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockResolvedValueOnce(undefined) // validate.sh exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // setup.sh doesn't exist
 
-      mockReaddirSync.mockReturnValue([
+      mockReaddir.mockResolvedValue([
         { name: "challenge1", isDirectory: () => true },
       ]);
 
-      mockStatSync.mockReturnValue({ mode: 0o755 });
-      mockReadFileSync.mockReturnValue("yaml content");
+      mockStat.mockResolvedValue({ mode: 0o755 });
+      mockReadFile.mockResolvedValue("yaml content");
       mockParse.mockReturnValue({
         title: "Updated Title",
         description: "Updated Desc",
@@ -202,11 +222,11 @@ describe("ChallengeLoader", () => {
     });
 
     it("should handle loading errors gracefully", async () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenges dir exists
-        .mockReturnValueOnce(false); // challenge.yaml missing
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenges dir exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // challenge.yaml missing
 
-      mockReaddirSync.mockReturnValue([
+      mockReaddir.mockResolvedValue([
         { name: "invalid-challenge", isDirectory: () => true },
       ]);
 
@@ -223,20 +243,21 @@ describe("ChallengeLoader", () => {
     });
 
     it("should make validate.sh executable if not already", async () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenges dir exists
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(true) // validate.sh exists
-        .mockReturnValueOnce(false); // setup.sh doesn't exist
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenges dir exists
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockResolvedValueOnce(undefined) // validate.sh exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // setup.sh doesn't exist
 
-      mockReaddirSync.mockReturnValue([
+      mockReaddir.mockResolvedValue([
         { name: "challenge1", isDirectory: () => true },
       ]);
 
       // validate.sh not executable
-      mockStatSync.mockReturnValueOnce({ mode: 0o644 });
+      mockStat.mockResolvedValueOnce({ mode: 0o644 });
+      mockChmod.mockResolvedValue(undefined);
 
-      mockReadFileSync.mockReturnValue("yaml content");
+      mockReadFile.mockResolvedValue("yaml content");
       mockParse.mockReturnValue({
         title: "Test",
         description: "Desc",
@@ -248,7 +269,7 @@ describe("ChallengeLoader", () => {
       await challengeLoader.loadChallenges();
 
       // Should have called chmod to make it executable
-      expect(mockChmodSync).toHaveBeenCalledWith(
+      expect(mockChmod).toHaveBeenCalledWith(
         expect.stringContaining("validate.sh"),
         "755",
       );
@@ -355,14 +376,14 @@ describe("ChallengeLoader", () => {
   });
 
   describe("parseChallengeMetadata", () => {
-    it("should parse valid YAML", () => {
-      mockReadFileSync.mockReturnValue("title: Test\npoints: 100");
+    it("should parse valid YAML", async () => {
+      mockReadFile.mockResolvedValue("title: Test\npoints: 100");
       mockParse.mockReturnValue({
         title: "Test",
         points: 100,
       });
 
-      const result = (challengeLoader as any).parseChallengeMetadata(
+      const result = await (challengeLoader as any).parseChallengeMetadata(
         "/fake/path",
         "test",
       );
@@ -370,15 +391,15 @@ describe("ChallengeLoader", () => {
       expect(result).toEqual({ title: "Test", points: 100 });
     });
 
-    it("should throw error on invalid YAML", () => {
-      mockReadFileSync.mockReturnValue("invalid: [yaml");
+    it("should throw error on invalid YAML", async () => {
+      mockReadFile.mockResolvedValue("invalid: [yaml");
       mockParse.mockImplementation(() => {
         throw new Error("Invalid YAML");
       });
 
-      expect(() => {
-        (challengeLoader as any).parseChallengeMetadata("/fake/path", "test");
-      }).toThrow(/Invalid YAML in test\/challenge.yaml/);
+      await expect(
+        (challengeLoader as any).parseChallengeMetadata("/fake/path", "test"),
+      ).rejects.toThrow(/Invalid YAML in test\/challenge.yaml/);
     });
   });
 
@@ -413,60 +434,61 @@ describe("ChallengeLoader", () => {
   });
 
   describe("validateChallengeDirectory", () => {
-    it("should pass validation for complete challenge", () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(true) // validate.sh exists
-        .mockReturnValueOnce(false); // setup.sh doesn't exist
+    it("should pass validation for complete challenge", async () => {
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockResolvedValueOnce(undefined) // validate.sh exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // setup.sh doesn't exist
 
-      mockStatSync.mockReturnValueOnce({ mode: 0o755 }); // validate.sh is executable
+      mockStat.mockResolvedValueOnce({ mode: 0o755 }); // validate.sh is executable
 
-      expect(() => {
+      await expect(
         (challengeLoader as any).validateChallengeDirectory(
           "/fake/path",
           "test",
-        );
-      }).not.toThrow();
+        ),
+      ).resolves.not.toThrow();
     });
 
-    it("should throw error if challenge.yaml is missing", () => {
-      mockExistsSync.mockReturnValueOnce(false); // challenge.yaml missing
+    it("should throw error if challenge.yaml is missing", async () => {
+      mockAccess.mockRejectedValueOnce(new Error("ENOENT")); // challenge.yaml missing
 
-      expect(() => {
+      await expect(
         (challengeLoader as any).validateChallengeDirectory(
           "/fake/path",
           "test",
-        );
-      }).toThrow(/Missing required file: challenge.yaml/);
+        ),
+      ).rejects.toThrow(/Missing required file: test\/challenge.yaml/);
     });
 
-    it("should throw error if validate.sh is missing", () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(false); // validate.sh missing
+    it("should throw error if validate.sh is missing", async () => {
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // validate.sh missing
 
-      expect(() => {
+      await expect(
         (challengeLoader as any).validateChallengeDirectory(
           "/fake/path",
           "test",
-        );
-      }).toThrow(/Missing required file: validate.sh/);
+        ),
+      ).rejects.toThrow(/Missing required file: test\/validate.sh/);
     });
 
-    it("should fix permissions on non-executable validate.sh", () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // challenge.yaml exists
-        .mockReturnValueOnce(true) // validate.sh exists
-        .mockReturnValueOnce(false); // setup.sh doesn't exist
+    it("should fix permissions on non-executable validate.sh", async () => {
+      mockAccess
+        .mockResolvedValueOnce(undefined) // challenge.yaml exists
+        .mockResolvedValueOnce(undefined) // validate.sh exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // setup.sh doesn't exist
 
-      mockStatSync.mockReturnValueOnce({ mode: 0o644 }); // validate.sh not executable
+      mockStat.mockResolvedValueOnce({ mode: 0o644 }); // validate.sh not executable
+      mockChmod.mockResolvedValue(undefined);
 
-      (challengeLoader as any).validateChallengeDirectory("/fake/path", "test");
-
-      expect(mockChmodSync).toHaveBeenCalledWith(
-        "/fake/path/validate.sh",
-        "755",
+      await (challengeLoader as any).validateChallengeDirectory(
+        "/fake/path",
+        "test",
       );
+
+      expect(mockChmod).toHaveBeenCalledWith("/fake/path/validate.sh", "755");
     });
   });
 });

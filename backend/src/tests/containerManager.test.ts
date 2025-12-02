@@ -28,14 +28,30 @@ jest.unstable_mockModule("dockerode", () => ({
   },
 }));
 
-// Mock fs
-const mockExistsSync = jest.fn<any>();
-const mockReadFileSync = jest.fn<any>();
+// Mock fs/promises
+const mockAccess = jest.fn<any>();
 
+jest.unstable_mockModule("fs/promises", () => ({
+  default: {
+    access: mockAccess,
+  },
+}));
+
+// Mock fs constants
 jest.unstable_mockModule("fs", () => ({
   default: {
-    existsSync: mockExistsSync,
-    readFileSync: mockReadFileSync,
+    constants: {
+      F_OK: 0,
+      R_OK: 4,
+      W_OK: 2,
+      X_OK: 1,
+    },
+  },
+  constants: {
+    F_OK: 0,
+    R_OK: 4,
+    W_OK: 2,
+    X_OK: 1,
   },
 }));
 
@@ -60,6 +76,17 @@ jest.unstable_mockModule("../config/index.js", () => ({
   },
 }));
 
+// Mock tar-stream
+const mockEntry = jest.fn<any>();
+const mockFinalize = jest.fn<any>();
+const mockPack = jest.fn<any>();
+
+jest.unstable_mockModule("tar-stream", () => ({
+  default: {
+    pack: mockPack,
+  },
+}));
+
 // Import after mocks
 const { ContainerManager } = await import("../services/containerManager.js");
 
@@ -68,6 +95,13 @@ describe("ContainerManager", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Setup tar-stream mock to return an object with entry and finalize
+    mockPack.mockReturnValue({
+      entry: mockEntry,
+      finalize: mockFinalize,
+    });
+
     containerManager = new ContainerManager();
 
     // Default mocks
@@ -101,6 +135,11 @@ describe("ContainerManager", () => {
 
       expect(mockBuildImage).toHaveBeenCalled();
       expect(mockFollowProgress).toHaveBeenCalled();
+      expect(mockEntry).toHaveBeenCalledWith(
+        { name: "Dockerfile" },
+        expect.any(String),
+      );
+      expect(mockFinalize).toHaveBeenCalled();
     });
 
     it("should throw error if build fails", async () => {
@@ -122,7 +161,7 @@ describe("ContainerManager", () => {
       mockGetChallengeDirectory.mockResolvedValue(
         "/fake/challenges/test-challenge",
       );
-      mockExistsSync.mockReturnValue(true);
+      mockAccess.mockResolvedValue(undefined); // Directory exists
       mockCreateContainer.mockResolvedValue({
         id: "container123",
         start: mockStart,
@@ -145,8 +184,13 @@ describe("ContainerManager", () => {
           Tty: true,
           OpenStdin: true,
           HostConfig: expect.objectContaining({
-            Binds: ["/fake/challenges/test-challenge:/challenge:ro"],
+            Binds: expect.arrayContaining([
+              expect.stringMatching(
+                /\/fake\/challenges\/test-challenge:\/challenge:ro$/,
+              ),
+            ]),
             Memory: 256 * 1024 * 1024,
+            NanoCpus: Math.floor(0.5 * 1e9),
             PidsLimit: 100,
             NetworkMode: "none",
           }),
@@ -165,9 +209,9 @@ describe("ContainerManager", () => {
     });
 
     it("should run setup script if it exists", async () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // Challenge dir exists
-        .mockReturnValueOnce(true); // setup.sh exists
+      mockAccess
+        .mockResolvedValueOnce(undefined) // Challenge dir exists
+        .mockResolvedValueOnce(undefined); // setup.sh exists
 
       await containerManager.createContainer(1, 100);
 
@@ -180,17 +224,18 @@ describe("ContainerManager", () => {
     });
 
     it("should skip setup script if it doesn't exist", async () => {
-      mockExistsSync
-        .mockReturnValueOnce(true) // Challenge dir exists
-        .mockReturnValueOnce(false); // setup.sh doesn't exist
+      mockAccess
+        .mockResolvedValueOnce(undefined) // Challenge dir exists
+        .mockRejectedValueOnce(new Error("ENOENT")); // setup.sh doesn't exist
 
       await containerManager.createContainer(1, 100);
 
+      // Exec should not be called for setup
       expect(mockExec).not.toHaveBeenCalled();
     });
 
     it("should throw error if challenge directory doesn't exist", async () => {
-      mockExistsSync.mockReturnValue(false);
+      mockAccess.mockRejectedValue(new Error("ENOENT")); // Directory doesn't exist
 
       await expect(containerManager.createContainer(1, 100)).rejects.toThrow(
         "Challenge directory not found",
@@ -239,7 +284,7 @@ describe("ContainerManager", () => {
       mockGetChallengeDirectory.mockResolvedValue(
         "/fake/challenges/test-challenge",
       );
-      mockExistsSync.mockReturnValue(true);
+      mockAccess.mockResolvedValue(undefined); // validate.sh exists
       mockExec.mockResolvedValue({
         start: mockExecStart,
         inspect: mockExecInspect,
@@ -294,7 +339,7 @@ describe("ContainerManager", () => {
     });
 
     it("should throw error if validation script doesn't exist", async () => {
-      mockExistsSync.mockReturnValue(false);
+      mockAccess.mockRejectedValue(new Error("ENOENT")); // validate.sh doesn't exist
 
       await expect(
         containerManager.validateChallenge("container123", 1),
