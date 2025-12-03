@@ -2,7 +2,7 @@ id: kill-high-memory-process
 title: Kill the High-Memory Process
 description: |
   Two Python processes are running.  
-  One of them is holding a large chunk of memory (around 25MB).  
+  One of them is holding a larger chunk of memory (potentially over 60MB).  
   Your task is to identify which process is consuming the most memory and terminate it.
 difficulty: medium
 points: 20

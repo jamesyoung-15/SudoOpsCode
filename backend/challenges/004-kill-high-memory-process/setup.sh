@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Memory allocation script that uses ~25MB
+# Memory allocation script that uses >65MB
 cat > /tmp/mem_hog.py << 'EOF'
-x = bytearray(25 * 1024 * 1024)  # 25MB
+x = bytearray(80 * 1024 * 1024)
 import time
 time.sleep(30000)
 EOF
