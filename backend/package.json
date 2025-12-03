@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "LOG_LEVEL=debug node dist/app.js",
+    "dev": "node dist/app.js",
     "test": "LOG_LEVEL=silent node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "start": "LOG_LEVEL=info node dist/app.js"
   },

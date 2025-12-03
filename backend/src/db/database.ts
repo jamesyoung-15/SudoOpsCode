@@ -38,110 +38,12 @@ export const initializeDatabase = async () => {
   // Use memory-mapped I/O for better performance (256MB)
   await sequelize.query("PRAGMA mmap_size = 268435456");
 
-  // Create users table
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  // Import models to ensure they're initialized
+  await import("../models/index.js");
 
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`,
-  );
-
-  // Create challenges table
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS challenges (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      difficulty TEXT NOT NULL CHECK(difficulty IN ('easy', 'medium', 'hard')),
-      points INTEGER NOT NULL,
-      category TEXT NOT NULL,
-      solution TEXT,
-      directory TEXT NOT NULL UNIQUE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_challenges_difficulty ON challenges(difficulty)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_challenges_category ON challenges(category)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_challenges_directory ON challenges(directory)`,
-  );
-
-  // Create attempts table
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS attempts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      challenge_id INTEGER NOT NULL,
-      success BOOLEAN NOT NULL,
-      attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
-    )
-  `);
-
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_attempts_user_id ON attempts(user_id)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_attempts_challenge_id ON attempts(challenge_id)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_attempts_success ON attempts(success)`,
-  );
-
-  // Create solves table
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS solves (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      challenge_id INTEGER NOT NULL,
-      solved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(user_id, challenge_id),
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
-    )
-  `);
-
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_solves_user_id ON solves(user_id)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_solves_challenge_id ON solves(challenge_id)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_solves_solved_at ON solves(solved_at)`,
-  );
-
-  // Create user favorite questions table
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS favorites (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      challenge_id INTEGER NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(user_id, challenge_id),
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
-    )
-  `);
-
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id)`,
-  );
-  await sequelize.query(
-    `CREATE INDEX IF NOT EXISTS idx_favorites_challenge_id ON favorites(challenge_id)`,
-  );
+  // Use Sequelize sync to create/update tables based on models
+  // alter: true will add missing columns without dropping existing data
+  await sequelize.sync({ alter: true });
 
   logger.info("Database schema initialized");
 };

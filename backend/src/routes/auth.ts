@@ -1,16 +1,10 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { sequelize } from "../db/database.js";
 import { config } from "../config/index.js";
 import { logger } from "../utils/logger.js";
-import {
-  RegisterRequest,
-  LoginRequest,
-  AuthResponse,
-  User,
-} from "../types/auth.js";
-import { QueryTypes } from "sequelize";
+import { RegisterRequest, LoginRequest, AuthResponse } from "../types/auth.js";
+import { User } from "../models/index.js";
 
 const router = Router();
 
@@ -50,15 +44,11 @@ router.post(
       }
 
       // Check if user exists
-      const existingUser = (await sequelize.query(
-        "SELECT id FROM users WHERE username = ?",
-        {
-          replacements: [username],
-          type: QueryTypes.SELECT,
-        },
-      )) as User[];
+      const existingUser = await User.findOne({
+        where: { username },
+      });
 
-      if (existingUser.length > 0) {
+      if (existingUser) {
         res.status(409).json({ error: "Username already taken" });
         return;
       }
@@ -67,28 +57,25 @@ router.post(
       const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
 
       // Create user
-      const result = await sequelize.query(
-        "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-        {
-          replacements: [username, passwordHash],
-          type: QueryTypes.INSERT,
-        },
-      );
-
-      const userId = result[0] as number;
-
-      // Generate token
-      const token = jwt.sign({ userId: userId, username }, config.jwtSecret, {
-        expiresIn: config.jwtExpiresIn,
+      const user = await User.create({
+        username,
+        password: passwordHash,
       });
 
-      logger.info({ userId, username }, "User registered");
+      // Generate token
+      const token = jwt.sign(
+        { userId: user.id, username: user.username },
+        config.jwtSecret,
+        { expiresIn: config.jwtExpiresIn },
+      );
+
+      logger.info({ userId: user.id, username }, "User registered");
 
       const response: AuthResponse = {
         token,
         user: {
-          userId: userId,
-          username,
+          userId: user.id,
+          username: user.username,
         },
       };
 
@@ -114,24 +101,17 @@ router.post(
       }
 
       // Find user
-      const user = (await sequelize.query(
-        "SELECT id, username, password_hash FROM users WHERE username = ?",
-        {
-          replacements: [username],
-          type: QueryTypes.SELECT,
-        },
-      )) as User[];
+      const user = await User.findOne({
+        where: { username },
+      });
 
-      if (user.length === 0) {
+      if (!user) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
       }
 
       // Verify password
-      const passwordValid = await bcrypt.compare(
-        password,
-        user[0].password_hash,
-      );
+      const passwordValid = await bcrypt.compare(password, user.password);
 
       if (!passwordValid) {
         res.status(401).json({ error: "Invalid credentials" });
@@ -140,21 +120,21 @@ router.post(
 
       // Generate token
       const token = jwt.sign(
-        { userId: user[0].id, username: user[0].username },
+        { userId: user.id, username: user.username },
         config.jwtSecret,
         { expiresIn: config.jwtExpiresIn },
       );
 
       logger.info(
-        { userId: user[0].id, username: user[0].username },
+        { userId: user.id, username: user.username },
         "User logged in",
       );
 
       const response: AuthResponse = {
         token,
         user: {
-          userId: user[0].id,
-          username: user[0].username,
+          userId: user.id,
+          username: user.username,
         },
       };
 

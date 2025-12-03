@@ -1,6 +1,7 @@
 import { sequelize } from "../db/database.js";
 import { logger } from "../utils/logger.js";
-import { QueryTypes, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
+import { Attempt, Solve, Challenge } from "../models/index.js";
 
 export class ProgressService {
   private db: Sequelize;
@@ -18,13 +19,11 @@ export class ProgressService {
     success: boolean,
   ): Promise<void> {
     try {
-      await this.db.query(
-        "INSERT INTO attempts (user_id, challenge_id, success) VALUES (?, ?, ?)",
-        {
-          replacements: [userId, challengeId, success ? 1 : 0],
-          type: QueryTypes.INSERT,
-        },
-      );
+      await Attempt.create({
+        user_id: userId,
+        challenge_id: challengeId,
+        success,
+      });
 
       logger.debug({ userId, challengeId, success }, "Attempt recorded");
     } catch (error) {
@@ -38,29 +37,23 @@ export class ProgressService {
    */
   async recordSolve(userId: number, challengeId: number): Promise<void> {
     try {
-      // Check if already solved
-      const existing = await this.db.query(
-        "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.SELECT,
+      // Use findOrCreate to handle duplicates gracefully
+      const [solve, created] = await Solve.findOrCreate({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
         },
-      );
+        defaults: {
+          user_id: userId,
+          challenge_id: challengeId,
+        },
+      });
 
-      if (existing.length > 0) {
+      if (created) {
+        logger.info({ userId, challengeId }, "Solve recorded");
+      } else {
         logger.debug({ userId, challengeId }, "Challenge already solved");
-        return;
       }
-
-      await this.db.query(
-        "INSERT INTO solves (user_id, challenge_id) VALUES (?, ?)",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.INSERT,
-        },
-      );
-
-      logger.info({ userId, challengeId }, "Solve recorded");
     } catch (error) {
       logger.error({ error, userId, challengeId }, "Failed to record solve");
       throw error;
@@ -80,36 +73,31 @@ export class ProgressService {
 
     try {
       // Record attempt
-      await this.db.query(
-        "INSERT INTO attempts (user_id, challenge_id, success) VALUES (?, ?, ?)",
+      await Attempt.create(
         {
-          replacements: [userId, challengeId, success ? 1 : 0],
-          type: QueryTypes.INSERT,
-          transaction,
+          user_id: userId,
+          challenge_id: challengeId,
+          success,
         },
+        { transaction },
       );
 
       // Record solve if successful and not already solved
       if (success && !alreadySolved) {
-        const existing = await this.db.query(
-          "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
-          {
-            replacements: [userId, challengeId],
-            type: QueryTypes.SELECT,
-            transaction,
+        // Use findOrCreate to avoid unique constraint errors
+        const [solve, created] = await Solve.findOrCreate({
+          where: {
+            user_id: userId,
+            challenge_id: challengeId,
           },
-        );
+          defaults: {
+            user_id: userId,
+            challenge_id: challengeId,
+          },
+          transaction,
+        });
 
-        if (existing.length === 0) {
-          await this.db.query(
-            "INSERT INTO solves (user_id, challenge_id) VALUES (?, ?)",
-            {
-              replacements: [userId, challengeId],
-              type: QueryTypes.INSERT,
-              transaction,
-            },
-          );
-
+        if (created) {
           logger.info({ userId, challengeId }, "New solve recorded");
         }
       }
@@ -131,15 +119,14 @@ export class ProgressService {
    */
   async hasSolved(userId: number, challengeId: number): Promise<boolean> {
     try {
-      const result = await this.db.query(
-        "SELECT id FROM solves WHERE user_id = ? AND challenge_id = ?",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.SELECT,
+      const solve = await Solve.findOne({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
         },
-      );
+      });
 
-      return result.length > 0;
+      return solve !== null;
     } catch (error) {
       logger.error(
         { error, userId, challengeId },
@@ -154,15 +141,11 @@ export class ProgressService {
    */
   async getChallengePoints(challengeId: number): Promise<number> {
     try {
-      const result = (await this.db.query(
-        "SELECT points FROM challenges WHERE id = ?",
-        {
-          replacements: [challengeId],
-          type: QueryTypes.SELECT,
-        },
-      )) as Array<{ points: number }>;
+      const challenge = await Challenge.findByPk(challengeId, {
+        attributes: ["points"],
+      });
 
-      return result.length > 0 ? result[0].points : 0;
+      return challenge ? challenge.points : 0;
     } catch (error) {
       logger.error({ error, challengeId }, "Failed to get challenge points");
       throw error;

@@ -1,9 +1,8 @@
 import { Router, Response } from "express";
-import { sequelize } from "../db/database.js";
 import { authenticateToken, AuthRequest } from "../middleware/auth.js";
-import { Challenge, ChallengeWithProgress } from "../types/challenge.js";
 import { logger } from "../utils/logger.js";
-import { QueryTypes } from "sequelize";
+import { Challenge, Solve, Attempt } from "../models/index.js";
+import { Op, fn, col, literal } from "sequelize";
 
 const router = Router();
 
@@ -27,44 +26,35 @@ router.get("/public", async (req, res) => {
     }
 
     // Get total count
-    const countResult = (await sequelize.query(
-      `SELECT COUNT(*) as total FROM challenges`,
-      { type: QueryTypes.SELECT },
-    )) as Array<{ total: number }>;
-
-    const totalChallenges = countResult[0].total;
+    const totalChallenges = await Challenge.count();
     const totalPages = Math.ceil(totalChallenges / limit);
 
-    // Get paginated challenges
-    const challenges = (await sequelize.query(
-      `SELECT 
-        c.id,
-        c.title,
-        c.description,
-        c.difficulty,
-        c.points,
-        c.category,
-        c.created_at,
-        COUNT(DISTINCT s.user_id) as solve_count
-      FROM challenges c
-      LEFT JOIN solves s ON c.id = s.challenge_id
-      GROUP BY c.id
-      ORDER BY c.id
-      LIMIT ? OFFSET ?`,
-      {
-        replacements: [limit, offset],
-        type: QueryTypes.SELECT,
-      },
-    )) as Array<{
-      id: number;
-      title: string;
-      description: string;
-      difficulty: string;
-      points: number;
-      category: string;
-      created_at: string;
-      solve_count: number;
-    }>;
+    // Get paginated challenges with solve count
+    const challenges = await Challenge.findAll({
+      attributes: [
+        "id",
+        "title",
+        "description",
+        "difficulty",
+        "points",
+        "category",
+        "created_at",
+        [fn("COUNT", fn("DISTINCT", col("solves.user_id"))), "solve_count"],
+      ],
+      include: [
+        {
+          model: Solve,
+          as: "solves",
+          attributes: [],
+          required: false,
+        },
+      ],
+      group: ["Challenge.id"],
+      order: [["id", "ASC"]],
+      limit,
+      offset,
+      subQuery: false,
+    });
 
     res.json({
       challenges,
@@ -91,31 +81,41 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.userId;
 
-    const challenges = (await sequelize.query(
-      `SELECT 
-        c.id,
-        c.title,
-        c.description,
-        c.difficulty,
-        c.points,
-        c.category,
-        c.created_at,
-        CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END as solved,
-        COALESCE(a.attempt_count, 0) as attempts
-      FROM challenges c
-      LEFT JOIN solves s ON c.id = s.challenge_id AND s.user_id = ?
-      LEFT JOIN (
-        SELECT challenge_id, COUNT(*) as attempt_count
-        FROM attempts
-        WHERE user_id = ?
-        GROUP BY challenge_id
-      ) a ON c.id = a.challenge_id
-      ORDER BY c.id`,
-      {
-        replacements: [userId, userId],
-        type: QueryTypes.SELECT,
-      },
-    )) as ChallengeWithProgress[];
+    const challenges = await Challenge.findAll({
+      attributes: [
+        "id",
+        "title",
+        "description",
+        "difficulty",
+        "points",
+        "category",
+        "created_at",
+        [
+          literal(`(CASE WHEN solves.id IS NOT NULL THEN 1 ELSE 0 END)`),
+          "solved",
+        ],
+        [fn("COUNT", col("attempts.id")), "attempts"],
+      ],
+      include: [
+        {
+          model: Solve,
+          as: "solves",
+          attributes: [],
+          where: { user_id: userId },
+          required: false,
+        },
+        {
+          model: Attempt,
+          as: "attempts",
+          attributes: [],
+          where: { user_id: userId },
+          required: false,
+        },
+      ],
+      group: ["Challenge.id", "solves.id"],
+      order: [["id", "ASC"]],
+      subQuery: false,
+    });
 
     res.json({ challenges });
   } catch (error) {
@@ -140,37 +140,47 @@ router.get(
         return res.status(400).json({ error: "Invalid challenge ID" });
       }
 
-      const challenge = (await sequelize.query(
-        `SELECT 
-        c.id,
-        c.title,
-        c.description,
-        c.difficulty,
-        c.points,
-        c.category,
-        c.created_at,
-        CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END as solved,
-        COALESCE(a.attempt_count, 0) as attempts
-      FROM challenges c
-      LEFT JOIN solves s ON c.id = s.challenge_id AND s.user_id = ?
-      LEFT JOIN (
-        SELECT challenge_id, COUNT(*) as attempt_count
-        FROM attempts
-        WHERE user_id = ? AND challenge_id = ?
-        GROUP BY challenge_id
-      ) a ON c.id = a.challenge_id
-      WHERE c.id = ?`,
-        {
-          replacements: [userId, userId, challengeId, challengeId],
-          type: QueryTypes.SELECT,
-        },
-      )) as ChallengeWithProgress[];
+      // Get challenge
+      const challenge = await Challenge.findByPk(challengeId, {
+        attributes: [
+          "id",
+          "title",
+          "description",
+          "difficulty",
+          "points",
+          "category",
+          "created_at",
+        ],
+      });
 
-      if (challenge.length === 0) {
+      if (!challenge) {
         return res.status(404).json({ error: "Challenge not found" });
       }
 
-      res.json({ challenge: challenge[0] });
+      // Check if user solved it
+      const solve = await Solve.findOne({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
+        },
+      });
+
+      // Count user's attempts
+      const attemptsCount = await Attempt.count({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
+        },
+      });
+
+      // Build response
+      const challengeWithProgress = {
+        ...challenge.toJSON(),
+        solved: solve ? 1 : 0,
+        attempts: attemptsCount,
+      };
+
+      res.json({ challenge: challengeWithProgress });
     } catch (error) {
       logger.error({ error }, "Failed to fetch challenge");
       res.status(500).json({ error: "Failed to fetch challenge" });
@@ -195,25 +205,21 @@ router.get(
       }
 
       // Get the solution
-      const challenge = (await sequelize.query(
-        "SELECT solution FROM challenges WHERE id = ?",
-        {
-          replacements: [challengeId],
-          type: QueryTypes.SELECT,
-        },
-      )) as Array<{ solution: string | null }>;
+      const challenge = await Challenge.findByPk(challengeId, {
+        attributes: ["solution"],
+      });
 
-      if (challenge.length === 0) {
+      if (!challenge) {
         return res.status(404).json({ error: "Challenge not found" });
       }
 
-      if (!challenge[0].solution) {
+      if (!challenge.solution) {
         return res
           .status(404)
           .json({ error: "No solution available for this challenge" });
       }
 
-      res.json({ solution: challenge[0].solution });
+      res.json({ solution: challenge.solution });
     } catch (error) {
       logger.error({ error }, "Failed to fetch solution");
       res.status(500).json({ error: "Failed to fetch solution" });
@@ -227,29 +233,40 @@ router.get(
  */
 router.get("/stats/overview", authenticateToken, async (req, res) => {
   try {
-    const stats = (await sequelize.query(
-      `SELECT 
-        COUNT(DISTINCT c.id) as total_challenges,
-        COUNT(DISTINCT CASE WHEN c.difficulty = 'easy' THEN c.id END) as easy_challenges,
-        COUNT(DISTINCT CASE WHEN c.difficulty = 'medium' THEN c.id END) as medium_challenges,
-        COUNT(DISTINCT CASE WHEN c.difficulty = 'hard' THEN c.id END) as hard_challenges,
-        COUNT(DISTINCT s.challenge_id) as total_solves,
-        COUNT(DISTINCT s.user_id) as total_solvers
-      FROM challenges c
-      LEFT JOIN solves s ON c.id = s.challenge_id`,
-      {
-        type: QueryTypes.SELECT,
-      },
-    )) as Array<{
-      total_challenges: number;
-      easy_challenges: number;
-      medium_challenges: number;
-      hard_challenges: number;
-      total_solves: number;
-      total_solvers: number;
-    }>;
+    const totalChallenges = await Challenge.count();
 
-    res.json({ stats: stats[0] });
+    const easyChallenges = await Challenge.count({
+      where: { difficulty: "easy" },
+    });
+
+    const mediumChallenges = await Challenge.count({
+      where: { difficulty: "medium" },
+    });
+
+    const hardChallenges = await Challenge.count({
+      where: { difficulty: "hard" },
+    });
+
+    const totalSolves = await Solve.count({
+      distinct: true,
+      col: "challenge_id",
+    });
+
+    const totalSolvers = await Solve.count({
+      distinct: true,
+      col: "user_id",
+    });
+
+    const stats = {
+      total_challenges: totalChallenges,
+      easy_challenges: easyChallenges,
+      medium_challenges: mediumChallenges,
+      hard_challenges: hardChallenges,
+      total_solves: totalSolves,
+      total_solvers: totalSolvers,
+    };
+
+    res.json({ stats });
   } catch (error) {
     logger.error({ error }, "Failed to fetch stats");
     res.status(500).json({ error: "Failed to fetch stats" });

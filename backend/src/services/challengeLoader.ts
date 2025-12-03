@@ -6,7 +6,8 @@ import { sequelize } from "../db/database.js";
 import { logger } from "../utils/logger.js";
 import { ChallengeMetadata } from "../types/challenge.js";
 import { config } from "../config/index.js";
-import { QueryTypes, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
+import { Challenge } from "../models/index.js";
 
 export class ChallengeLoader {
   private challenges_dir: string;
@@ -206,57 +207,35 @@ export class ChallengeLoader {
     metadata: ChallengeMetadata,
     dirName: string,
   ): Promise<void> {
-    const existing = (await this.db.query(
-      "SELECT id FROM challenges WHERE directory = ?",
-      {
-        replacements: [dirName],
-        type: QueryTypes.SELECT,
+    const [challenge, created] = await Challenge.findOrCreate({
+      where: { directory: dirName },
+      defaults: {
+        title: metadata.title,
+        description: metadata.description,
+        difficulty: metadata.difficulty,
+        points: metadata.points,
+        category: metadata.category,
+        solution: metadata.solution || null,
+        directory: dirName,
       },
-    )) as { id: number }[];
+    });
 
-    if (existing.length > 0) {
+    if (!created) {
       // Update existing challenge
-      await this.db.query(
-        `UPDATE challenges 
-         SET title = ?, description = ?, difficulty = ?, points = ?, category = ?, solution = ?
-         WHERE directory = ?`,
-        {
-          replacements: [
-            metadata.title,
-            metadata.description,
-            metadata.difficulty,
-            metadata.points,
-            metadata.category,
-            metadata.solution || null,
-            dirName,
-          ],
-          type: QueryTypes.UPDATE,
-        },
-      );
+      await challenge.update({
+        title: metadata.title,
+        description: metadata.description,
+        difficulty: metadata.difficulty,
+        points: metadata.points,
+        category: metadata.category,
+        solution: metadata.solution || null,
+      });
 
       logger.debug(
-        { directory: dirName, id: existing[0].id },
+        { directory: dirName, id: challenge.id },
         "Challenge updated",
       );
     } else {
-      // Insert new challenge
-      await this.db.query(
-        `INSERT INTO challenges (title, description, difficulty, points, category, solution, directory)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        {
-          replacements: [
-            metadata.title,
-            metadata.description,
-            metadata.difficulty,
-            metadata.points,
-            metadata.category,
-            metadata.solution || null,
-            dirName,
-          ],
-          type: QueryTypes.INSERT,
-        },
-      );
-
       logger.debug({ directory: dirName }, "Challenge inserted");
     }
   }
@@ -265,19 +244,15 @@ export class ChallengeLoader {
    * Get challenge directory path by ID
    */
   async getChallengeDirectory(challengeId: number): Promise<string> {
-    const challenge = (await this.db.query(
-      "SELECT directory FROM challenges WHERE id = ?",
-      {
-        replacements: [challengeId],
-        type: QueryTypes.SELECT,
-      },
-    )) as { directory: string }[];
+    const challenge = await Challenge.findByPk(challengeId, {
+      attributes: ["directory"],
+    });
 
-    if (challenge.length === 0) {
+    if (!challenge) {
       throw new Error(`Challenge not found: ${challengeId}`);
     }
 
-    return path.join(this.challenges_dir, challenge[0].directory);
+    return path.join(this.challenges_dir, challenge.directory);
   }
 }
 

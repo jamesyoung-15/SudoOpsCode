@@ -1,8 +1,8 @@
 import { Router, Response } from "express";
-import { sequelize } from "../db/database.js";
 import { authenticateToken, AuthRequest } from "../middleware/auth.js";
 import { logger } from "../utils/logger.js";
-import { QueryTypes } from "sequelize";
+import { Challenge, Favorite, Solve } from "../models/index.js";
+import { Op } from "sequelize";
 
 const router = Router();
 
@@ -27,41 +27,56 @@ router.get("/", authenticateToken, async (req: AuthRequest, res: Response) => {
     }
 
     // Get total count
-    const countResult = (await sequelize.query(
-      `SELECT COUNT(*) as total FROM favorites WHERE user_id = ?`,
-      {
-        replacements: [userId],
-        type: QueryTypes.SELECT,
-      },
-    )) as Array<{ total: number }>;
+    const totalFavorites = await Favorite.count({
+      where: { user_id: userId },
+    });
 
-    const totalFavorites = countResult[0].total;
     const totalPages = Math.ceil(totalFavorites / limit);
 
-    // Get paginated favorites
-    const favorites = await sequelize.query(
-      `SELECT 
-        c.id,
-        c.title,
-        c.difficulty,
-        c.points,
-        c.category,
-        f.created_at as favorited_at,
-        CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END as solved
-      FROM favorites f
-      JOIN challenges c ON f.challenge_id = c.id
-      LEFT JOIN solves s ON c.id = s.challenge_id AND s.user_id = ?
-      WHERE f.user_id = ?
-      ORDER BY f.created_at DESC
-      LIMIT ? OFFSET ?`,
-      {
-        replacements: [userId, userId, limit, offset],
-        type: QueryTypes.SELECT,
+    // Get paginated favorites with challenge details
+    const favorites = await Favorite.findAll({
+      where: { user_id: userId },
+      include: [
+        {
+          model: Challenge,
+          as: "challenge",
+          attributes: ["id", "title", "difficulty", "points", "category"],
+          required: true,
+        },
+      ],
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
+    });
+
+    // Check which challenges are solved
+    const challengeIds = favorites.map((f) => f.challenge_id);
+    const solvedChallenges = await Solve.findAll({
+      where: {
+        user_id: userId,
+        challenge_id: { [Op.in]: challengeIds },
       },
-    );
+      attributes: ["challenge_id"],
+    });
+
+    const solvedSet = new Set(solvedChallenges.map((s) => s.challenge_id));
+
+    // Format response
+    const formattedFavorites = favorites.map((favorite) => {
+      const challenge = (favorite as any).challenge;
+      return {
+        id: challenge.id,
+        title: challenge.title,
+        difficulty: challenge.difficulty,
+        points: challenge.points,
+        category: challenge.category,
+        favorited_at: favorite.created_at,
+        solved: solvedSet.has(challenge.id) ? 1 : 0,
+      };
+    });
 
     res.json({
-      favorites,
+      favorites: formattedFavorites,
       pagination: {
         page,
         limit,
@@ -94,28 +109,30 @@ router.post(
       }
 
       // Check if challenge exists
-      const challenge = await sequelize.query(
-        "SELECT id FROM challenges WHERE id = ?",
-        {
-          replacements: [challengeId],
-          type: QueryTypes.SELECT,
-        },
-      );
+      const challenge = await Challenge.findByPk(challengeId);
 
-      if (challenge.length === 0) {
+      if (!challenge) {
         return res.status(404).json({ error: "Challenge not found" });
       }
 
-      // Add to favorites (ignore if already exists)
-      await sequelize.query(
-        "INSERT OR IGNORE INTO favorites (user_id, challenge_id) VALUES (?, ?)",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.INSERT,
+      // Add to favorites (findOrCreate handles duplicates)
+      const [favorite, created] = await Favorite.findOrCreate({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
         },
-      );
+        defaults: {
+          user_id: userId,
+          challenge_id: challengeId,
+        },
+      });
 
-      logger.info({ userId, challengeId }, "Added to favorites");
+      if (created) {
+        logger.info({ userId, challengeId }, "Added to favorites");
+      } else {
+        logger.debug({ userId, challengeId }, "Already in favorites");
+      }
+
       res.json({ message: "Added to favorites" });
     } catch (error) {
       logger.error({ error }, "Failed to add favorite");
@@ -140,15 +157,14 @@ router.delete(
         return res.status(400).json({ error: "Invalid challenge ID" });
       }
 
-      await sequelize.query(
-        "DELETE FROM favorites WHERE user_id = ? AND challenge_id = ?",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.DELETE,
+      const deleted = await Favorite.destroy({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
         },
-      );
+      });
 
-      logger.info({ userId, challengeId }, "Removed from favorites");
+      logger.info({ userId, challengeId, deleted }, "Removed from favorites");
       res.json({ message: "Removed from favorites" });
     } catch (error) {
       logger.error({ error }, "Failed to remove favorite");
@@ -173,15 +189,14 @@ router.get(
         return res.status(400).json({ error: "Invalid challenge ID" });
       }
 
-      const result = await sequelize.query(
-        "SELECT id FROM favorites WHERE user_id = ? AND challenge_id = ?",
-        {
-          replacements: [userId, challengeId],
-          type: QueryTypes.SELECT,
+      const favorite = await Favorite.findOne({
+        where: {
+          user_id: userId,
+          challenge_id: challengeId,
         },
-      );
+      });
 
-      res.json({ isFavorite: result.length > 0 });
+      res.json({ isFavorite: favorite !== null });
     } catch (error) {
       logger.error({ error }, "Failed to check favorite status");
       res.status(500).json({ error: "Failed to check favorite status" });

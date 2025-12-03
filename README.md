@@ -4,11 +4,9 @@ Basically Leetcode for Linux admin. Platform for solving Linux/DevOps challenges
 
 Frontend uses React + Vite + TS + CSS.
 
-Backend uses Node + Express to manage challenge sessions, Docker containers, and user progress. SQLite used for database to store user info and Docker for providing isolated Linux environments for each challenge session, interacted through websockets.
+Backend uses Node + Express to manage challenge sessions, Docker containers, and user progress. After presentation added models to fully use Sequelize ORM instead of raw SQL (whoops).
 
-## Preview
-
-![](./media/AppPreview.png)
+SQLite used for database to store user info and Docker for providing isolated Linux environments for each challenge session, interacted through websockets.
 
 ## Setup
 
@@ -18,19 +16,9 @@ Tested on Linux host.
 
 Ensure system has Docker and NodeJS installed.
 
-### Docker Setup
-
-**Important**: First need to build the actual base Docker image that is used for each container. Run:
-
-``` bash
-docker build -f backend/challenges/Dockerfile.challenge -t challenge-runner:v1.0 .
-```
-
-This is the Docker image used for each container that corresponds to a terminal session. Without it backend may error out.
-
 ### Backend Setup
 
-By default, this starts the Express server on port 3008 (also set in frontend). You can create `.env` and set environment variables listed in `backend/config/index.ts`.
+By default, this starts the Express server on port 3008 (also set in frontend). You can create `.env` to change environment variables listed in `backend/config/index.ts`.
 
 ``` bash
 cd backend
