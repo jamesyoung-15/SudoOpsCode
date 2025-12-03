@@ -1,79 +1,160 @@
-import { describe, it, expect } from "@jest/globals";
 import request from "supertest";
-import express, { Router } from "express";
-import { authenticateToken } from "../middleware/auth.js";
-import jwt from "jsonwebtoken";
-import { JWTPayload } from "../types/auth.js";
+import express from "express";
+import authRoutes from "../routes/auth.js";
+import { initTestDatabase, cleanTestDatabase, closeTestDatabase } from "./setup.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
-
-// Create a test app
+// Create a test app instead of using the main app
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-
-  const router = Router();
-
-  // Protected route for testing authentication middleware
-  router.get("/protected", authenticateToken, (req: any, res) => {
-    res.json({ message: "Access granted", user: req.user });
-  });
-
-  app.use("/api", router);
+  app.use("/api/auth", authRoutes);
   return app;
 };
 
-describe("Auth Middleware", () => {
-  it("should allow access with valid token", async () => {
-    const app = createTestApp();
+describe("Auth Routes", () => {
+  let testApp: express.Application;
 
-    // create dummy user with signed JWT
-    const payload: JWTPayload = { userId: 1, username: "testuser" };
-    const token = jwt.sign(payload, JWT_SECRET);
-
-    const response = await request(app)
-      .get("/api/protected")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty("message", "Access granted");
-    expect(response.body.user).toHaveProperty("userId", 1);
-    expect(response.body.user).toHaveProperty("username", "testuser");
+  beforeAll(async () => {
+    await initTestDatabase();
+    testApp = createTestApp();
   });
 
-  it("should deny access without token", async () => {
-    const app = createTestApp();
-
-    const response = await request(app).get("/api/protected");
-
-    expect(response.status).toBe(401);
-    expect(response.body).toHaveProperty("error", "Access token required");
+  beforeEach(async () => {
+    await cleanTestDatabase();
   });
 
-  it("should deny access with invalid token", async () => {
-    const app = createTestApp();
-
-    const response = await request(app)
-      .get("/api/protected")
-      .set("Authorization", "Bearer invalid-token");
-
-    expect(response.status).toBe(403);
-    expect(response.body).toHaveProperty("error", "Invalid or expired token");
+  afterAll(async () => {
+    await closeTestDatabase();
   });
 
-  it("should deny access with expired token", async () => {
-    const app = createTestApp();
-    const payload: JWTPayload = { userId: 1, username: "testuser" };
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "0s" });
+  describe("POST /api/auth/register", () => {
+    it("should register a new user", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "testuser",
+          password: "testpass123",
+        });
 
-    // Wait a bit to ensure expiration
-    await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty("token");
+      expect(response.body.user).toHaveProperty("userId");
+      expect(response.body.user.username).toBe("testuser");
+    });
 
-    const response = await request(app)
-      .get("/api/protected")
-      .set("Authorization", `Bearer ${token}`);
+    it("should reject duplicate username", async () => {
+      // First registration
+      await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "testuser",
+          password: "testpass123",
+        });
 
-    expect(response.status).toBe(403);
-    expect(response.body).toHaveProperty("error", "Invalid or expired token");
+      // Second registration with same username
+      const response = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "testuser",
+          password: "testpass456",
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe("Username already taken");
+    });
+
+    it("should reject short username", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "ab",
+          password: "testpass123",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("between 3 and 20 characters");
+    });
+
+    it("should reject short password", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "testuser",
+          password: "short",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("at least 8 characters");
+    });
+
+    it("should reject invalid username characters", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "test@user",
+          password: "testpass123",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("letters, numbers, hyphens");
+    });
+  });
+
+  describe("POST /api/auth/login", () => {
+    beforeEach(async () => {
+      // Register a user for login tests
+      await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          username: "testuser",
+          password: "testpass123",
+        });
+    });
+
+    it("should login existing user", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/login")
+        .send({
+          username: "testuser",
+          password: "testpass123",
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("token");
+      expect(response.body.user.username).toBe("testuser");
+    });
+
+    it("should reject invalid password", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/login")
+        .send({
+          username: "testuser",
+          password: "wrongpass",
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Invalid credentials");
+    });
+
+    it("should reject non-existent user", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/login")
+        .send({
+          username: "nonexistent",
+          password: "testpass123",
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Invalid credentials");
+    });
+
+    it("should reject missing credentials", async () => {
+      const response = await request(testApp)
+        .post("/api/auth/login")
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("required");
+    });
   });
 });
