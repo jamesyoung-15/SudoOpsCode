@@ -16,9 +16,22 @@ Tested on Linux host.
 
 Ensure system has Docker and NodeJS installed.
 
+Clone this repo, ie:
+
+``` bash
+git clone https://github.com/jamesyoung-15/sudoopscode
+cd sudoopscode
+```
+
 ### Backend Setup
 
-By default, this starts the Express server on port 3008 (also set in frontend). You can create `.env` to change environment variables listed in `backend/config/index.ts`.
+Create `.env` inside `backend/`, it is mandatory to define a `JWT_SECRET` variable and you can also modify configuration variables seen in `backend/src/config/index.ts`. Example:
+
+``` conf
+JWT_SECRET=my_key
+```
+
+Then setup the Node backend:
 
 ``` bash
 cd backend
@@ -28,6 +41,10 @@ npm run dev
 # for running unit tests
 npm run test
 ```
+
+By default, this starts the Express server on port 3008 (also set in frontend).
+
+**Important**: If you do change frontend port, you need to add it to the CORS in the backend (in `backend/src/app.ts`).
 
 ### Frontend Setup
 
@@ -40,13 +57,13 @@ npm run dev
 By default, the frontend uses localhost:3008 as the API base URL. To change, create `.env` in `frontend` and can change to something like:
 
 ``` conf
-VITE_API_BASE_URL=http://localhost:3009
-VITE_WS_BASE_URL=ws://localhost:3009
+VITE_API_BASE_URL=http://localhost:3008
+VITE_WS_BASE_URL=ws://localhost:3008
 ```
 
-## Non-local Deployment
+## Cloud Deployment
 
-For non-local deployment, I used Cloudflare as my DNS provider and CDN, AWS S3 to host frontend, Oracle Instance to host backend (API + database). Basically use Terraform to create public S3 bucket w/ Cloudflare domain pointing to bucket (cname), sync static frontend files to bucket, backend do manual deploy (could automate w/ Terraform + bash, possible todo).
+For cloud deployment, I used Cloudflare as my DNS provider and CDN, AWS S3 to host frontend, Oracle Instance to host backend (API + database). Basically use Terraform to create public S3 bucket w/ Cloudflare domain pointing to bucket (cname), sync static frontend files to bucket, backend do manual deploy (could automate w/ Terraform + bash, possible todo).
 
 Full instructions on free [setup](./docs/application_deployment.md)
 
